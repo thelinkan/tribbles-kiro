@@ -1,9 +1,9 @@
-#Description
+# Description
 Build a multiplayer game for playing the customizable card game Tribbles. It should have a server run on a raspberry pi and a client possible to run on both windows and Linux. 
 
 The players need to be able to create a user and log into the server. They should be able to build decks and play games with other players that are logged in.
 
-##Rules of the game
+## Rules of the game
 The game is played with 4 to 8 players, each player having their own deck. Before the game starts, the players are seated randomly and the starting player is also chosen at random. Then all players shuffle their deck and draw a starting hand of 7 cards. The game starts in clockwise order.
 
 There are 6 levels of tribbles, 1, 10, 100, 1000, 10000 and 100000. 
@@ -29,7 +29,7 @@ A player that is “decked” is a valid target for Tribbles powers, but they wi
 
 Each card has a denomination (number of tribbles), and a power. The cards are grouped into expansions. The following section will explain the rules for all the powers, per expansion, and list all cards available in that expansion.
 
-###Tribbles - base set
+### Tribbles - base set
 Discard: Choose one card in your hand to place in your discard pile.
 
 Go: Take another turn (that is, play the next tribble number in sequence).
@@ -52,7 +52,7 @@ The cards in the base set, per denomination
 10000: Clone, Reverse, Skip
 100000: no cards
 
-###The trouble with Tribbles
+### The trouble with Tribbles
 Bonus: At the end of the round, if you avoided getting "decked" and your play pile includes a run of all four BONUS cards (1-10-100-1,000), you score 100,000 points.
 
 The cards in the set per denomination
@@ -63,7 +63,7 @@ The cards in the set per denomination
 10000: Poison, Rescue, Clone
 100000: Clone, Discard, Rescue
 
-###More Tribbles, More Troubles
+### More Tribbles, More Troubles
 Antidote: If this tribble is poisoned, its owner scores points instead and may place his or her hand beneath his or her draw deck.
 
 Copy: You may immediately use the game text of the top tribble of any other play pile.
@@ -90,7 +90,7 @@ The cards in the set per denomination
 10000: Antidote, Kill, Recycle
 100000: Antidote, Kill, Replay
 
-###No Tribble at All
+### No Tribble at All
 From this expansion, combined powers are a thing.
 
 A compound Tribble power is a single card that contains two separate powers. In most cases, the use of one of the powers also triggers the use of the other power. For example, Matt plays a 10 Recycle & Freeze. If he chooses to activate the power, he must both select a player as the target for the Recycle, and name a Tribble power as the target for the Freeze.
@@ -143,7 +143,7 @@ The cards in the set per denomination
 10000: Safety, Time Warp
 100000: Freeze
 
-###Nothing But Tribble
+### Nothing But Tribble
 Advance: You may play this tribble in place of 1 tribble if the sequence was "broken."
 
 Assimilate: Choose a player. Take the top card from that player's draw deck and place it on your play pile. (Return that tribble at the end of the round or if it leaves your tribble pile.)
@@ -166,19 +166,19 @@ The cards in the set per denomination
 10000: Assimilate, Masaka, Reverse, Skip
 100000: Assimilate, Time Warp
 
-#Datamodell
+# Datamodell
 The database needs to contain information about players, cards and decks. The database should be either mysql, mariadb or postgresql. The player logs in from the client, so the tables for players need to have the information needed for the ability to log in. The table for the cards needs to have room for card name, denomination, ability, card number, expansion, image name. The deck table needs information about whose deck it is, if it is public, name, a list of cards (and amount of each card) in the deck. Also a comment text should be in there. 
 
-#Client requirements
+# Client requirements
 1. Possibility to log into the server from the client
 2. A deck builder with functions:
-2a. Search and filter for cards to put into the deck
-2b. Put a card into the deck from filtered list
-2c. Change number of a certain card in the deck.
-2d. save the deck to the server
-2e. load a deck
-2f. copy an old deck
-2g. Copy a public deck.
+   - Search and filter for cards to put into the deck
+   -  Put a card into the deck from filtered list
+   - Change number of a certain card in the deck.
+   -  save the deck to the server
+   - load a deck
+   - copy an old deck
+   - Copy a public deck.
 3. Start game
 4. join game
 5. Play a game.
@@ -188,7 +188,7 @@ The database needs to contain information about players, cards and decks. The da
 9. Show end of round score
 10. End of game screen, showing who won.
 
-#Server requirements
+# Server requirements
 1. Possibility to log into the server from the client
 2. Handle storage of cards
 3. Handle storage of decks
@@ -196,18 +196,18 @@ The database needs to contain information about players, cards and decks. The da
 5. Handle new round, including scoring.
 6. Handle end of game
 
-#Limits
+# Limits
 - Database serverside in mysql, mariadb or postgresql
 - Server written in python, should run on a raspberry pi
 - Tests for the server in pytest
 - Client written in Godot4 /GDScript
 - Test for client in the best available testing tool
 
-#Language rules
+# Language rules
 - The default language of the game is **English**
 - Possibility to change language to **Swedish** for the user interface
 
-#Non-functional requirements
+# Non-functional requirements
 - The code for the server shall have docstrings and typeannotations
 - The code for the client shall be properly documented
 

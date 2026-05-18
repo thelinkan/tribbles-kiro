@@ -14,7 +14,7 @@ Tribbles Multiplayer Game is a networked, turn-based card game system based on t
 - **Card**: A single Tribbles card with a denomination, a power (or compound power), a card number, an expansion, and an image reference.
 - **Denomination**: The numeric value printed on a card — one of: 1, 10, 100, 1000, 10000, or 100000.
 - **Power**: The special ability text on a card (e.g., Go, Skip, Poison). Compound powers are two powers on one card (e.g., Clone & Reverse).
-- **Expansion**: A named set of cards. Valid expansions: Base Set, The Trouble with Tribbles, More Tribbles More Troubles, No Tribble at All, Trials and Tribble-ations, Nothing But Tribble.
+- **Expansion**: A named set of cards, stored as a record in the expansions table. Valid expansions: Base Set, The Trouble with Tribbles, More Tribbles More Troubles, No Tribble at All, Trials and Tribble-ations, Nothing But Tribble.
 - **Deck**: A named, player-owned collection of cards with specified quantities, stored on the server.
 - **Draw Deck**: The face-down stack of cards a player draws from during a game.
 - **Play Pile**: The face-up stack of cards a player has played during the current round.
@@ -36,6 +36,11 @@ Tribbles Multiplayer Game is a networked, turn-based card game system based on t
 - **Score_Service**: The server-side component that calculates and records scores.
 - **DB**: The MariaDB relational database used for persistent storage.
 - **UI**: The client-side user interface presented to the player.
+- **Legal_Deck**: A deck containing at least 35 cards (sum of all card quantities), which is the minimum required to use a deck in a game.
+- **Disconnection**: The loss of network connectivity between a player's Client and the Server during an active game session.
+- **Reconnection_Timeout**: The configurable duration (in seconds) that the Server waits for a disconnected player to reconnect before assigning a computer-controlled player to that player's seat.
+- **AI_Substitute**: A computer-controlled player that temporarily controls a disconnected player's seat, using the same automated decision-making strategy as computer players created at game start.
+- **Spectator**: A logged-in player who is observing an active game session without participating as a player.
 
 ---
 
@@ -53,9 +58,10 @@ Tribbles Multiplayer Game is a networked, turn-based card game system based on t
 4. WHEN a login request is received with a valid username and correct password, THE Auth_Service SHALL return a session token valid for the duration of the session.
 5. WHEN a login request is received with an invalid username or incorrect password, THE Auth_Service SHALL return an authentication failure response without revealing which field is incorrect.
 6. WHEN a session token expires or is invalidated, THE Auth_Service SHALL reject subsequent requests using that token and return an unauthorised error response.
-7. THE Client SHALL provide a login screen allowing the player to enter a server address, username, and password.
-8. WHEN the player submits valid credentials on the login screen, THE Client SHALL store the session token and navigate to the main menu.
-9. IF the server returns an authentication failure, THEN THE Client SHALL display an error message without clearing the username field.
+7. THE Client SHALL provide a login screen allowing the player to enter a server address, username, and password, and SHALL provide a toggle or link to switch between login mode and registration mode.
+8. WHEN the player switches to registration mode, THE Client SHALL display a registration form collecting username, password, email address, and server address.
+9. WHEN the player submits valid credentials on the login screen, THE Client SHALL store the session token and navigate to the main menu.
+10. IF the server returns an authentication failure, THEN THE Client SHALL display an error message without clearing the username field.
 
 ---
 
@@ -65,14 +71,14 @@ Tribbles Multiplayer Game is a networked, turn-based card game system based on t
 
 #### Acceptance Criteria
 
-1. THE Card_Repository SHALL store each card record with: card name, denomination (1 / 10 / 100 / 1000 / 10000 / 100000), power text, card number, expansion name, and image filename.
+1. THE Card_Repository SHALL store each card record with: card name, denomination (1 / 10 / 100 / 1000 / 10000 / 100000), power text, card number, expansion_id (foreign key referencing the expansions table), and image filename.
 2. THE Card_Repository SHALL contain all cards defined in the six expansions: Base Set, The Trouble with Tribbles, More Tribbles More Troubles, No Tribble at All, Trials and Tribble-ations, and Nothing But Tribble.
 3. WHEN a card search request is received with filter parameters (denomination, power name, expansion, or card name substring), THE Card_Repository SHALL return only cards matching all supplied filter criteria.
 4. WHEN a card search request is received with no filter parameters, THE Card_Repository SHALL return all cards in the catalogue.
 5. THE Card_Repository SHALL treat compound powers (e.g., Clone & Reverse) as a distinct power identity separate from their component individual powers.
-6. THE Card_Repository SHALL support adding new expansions without requiring changes to the database schema or existing application code; adding a new expansion SHALL require only inserting new card records into the cards table with a new expansion name value.
-7. THE Server SHALL include a separate seed script for each expansion that inserts all cards for that expansion into the database; each script SHALL be independently runnable so that expansions can be added one at a time, and each script SHALL read card data (card name, denomination, power text, card number, expansion name, and image filename) from a structured data file (JSON or CSV) specific to that expansion.
-8. THE Card_Repository SHALL NOT hard-code the list of valid expansion names; any expansion name present in the cards table SHALL be treated as valid and appear in filter options returned to the Client.
+6. THE Card_Repository SHALL support adding new expansions without requiring changes to the database schema or existing application code; adding a new expansion SHALL require inserting a record into the expansions table AND inserting card records into the cards table referencing that expansion's ID.
+7. THE Server SHALL include a separate seed script for each expansion that inserts the expansion record into the expansions table and then inserts all cards for that expansion into the database referencing that expansion's ID; each script SHALL be independently runnable so that expansions can be added one at a time, and each script SHALL read card data (card name, denomination, power text, card number, and image filename) from a structured data file (JSON or CSV) specific to that expansion.
+8. THE Card_Repository SHALL NOT hard-code the list of valid expansion names; valid expansion names SHALL be derived from the expansions table and appear in filter options returned to the Client.
 
 ---
 
@@ -91,6 +97,9 @@ Tribbles Multiplayer Game is a networked, turn-based card game system based on t
 7. WHEN a copy-deck request is received referencing a private deck not owned by the requesting player, THE Deck_Service SHALL return an authorisation error.
 8. THE Client SHALL provide a deck builder screen with the ability to search and filter the card catalogue, add a card to the current deck, change the quantity of a card already in the deck, save the deck to the server, load an existing deck, copy an owned deck, and copy a public deck.
 9. WHEN the player changes the quantity of a card in the deck builder to zero, THE Client SHALL remove that card entry from the deck.
+10. WHEN a save-deck request is received, THE Deck_Service SHALL persist the deck regardless of the total card count, allowing players to save decks with fewer than 35 cards.
+11. THE Client SHALL display the current total card count (sum of all card quantities) in the deck builder at all times.
+12. WHEN the total card count in the deck builder is fewer than 35, THE Client SHALL display a visual indicator that the deck does not meet the minimum card count required for game use.
 
 ---
 
@@ -104,10 +113,14 @@ Tribbles Multiplayer Game is a networked, turn-based card game system based on t
 2. WHEN an authenticated player submits a join-game request with a valid game session ID and a selected deck ID, THE Lobby_Service SHALL add the player to the session if the session is in a waiting state and the current human player count is fewer than the session's total player count.
 3. WHEN a join-game request is received for a session whose human player count already equals the total player count, THE Lobby_Service SHALL return an error indicating the session is full.
 4. WHEN a join-game request is received for a session that is not in a waiting state, THE Lobby_Service SHALL return an error indicating the game has already started.
-5. THE Client SHALL provide a screen listing available game sessions in the waiting state, with the ability to start a new game or join an existing one.
-6. WHEN the session creator selects "Start Game", THE Lobby_Service SHALL fill any remaining seats (total player count minus human players joined) with computer-controlled players, each assigned a randomly selected deck from the card catalogue, and then transition the session to the active state and notify all joined human players.
-7. THE Game_Engine SHALL control computer players using an automated decision-making strategy that follows all game rules, selecting valid plays from their hand or drawing when no valid play is available.
-8. IF a create-game request specifies a total player count less than 4 or greater than 8, THEN THE Lobby_Service SHALL return an error indicating the player count is out of the valid range.
+5. THE Client SHALL provide a lobby screen listing game sessions in two categories: sessions in the waiting state (available to join) and sessions in the active state (available to watch), with clearly labelled actions for Create Game, Join Game, and Watch Game.
+6. WHEN an authenticated player submits a watch-game request with a valid game session ID, THE Lobby_Service SHALL add the player as a Spectator to the session if the session is in the active state.
+7. WHEN the session creator selects "Start Game", THE Lobby_Service SHALL fill any remaining seats (total player count minus human players joined) with computer-controlled players, each assigned a randomly selected deck from the card catalogue, and then transition the session to the active state and notify all joined human players.
+8. THE Game_Engine SHALL control computer players using an automated decision-making strategy that follows all game rules, selecting valid plays from their hand or drawing when no valid play is available.
+9. IF a create-game request specifies a total player count less than 4 or greater than 8, THEN THE Lobby_Service SHALL return an error indicating the player count is out of the valid range.
+10. IF a create-game request references a deck with a total card count fewer than 35, THEN THE Lobby_Service SHALL return an error indicating the deck does not meet the minimum card count for game use.
+11. IF a join-game request references a deck with a total card count fewer than 35, THEN THE Lobby_Service SHALL return an error indicating the deck does not meet the minimum card count for game use.
+12. THE Client SHALL prevent the player from selecting a deck with fewer than 35 cards when creating or joining a game.
 
 ---
 
@@ -345,7 +358,44 @@ Tribbles Multiplayer Game is a networked, turn-based card game system based on t
 
 1. THE DB SHALL be MariaDB.
 2. THE DB SHALL contain a players table with at minimum: player ID, username (unique), hashed password, email address, and creation timestamp.
-3. THE DB SHALL contain a cards table with at minimum: card ID, card name, denomination, power text, card number, expansion name, and image filename.
-4. THE DB SHALL contain a decks table with at minimum: deck ID, owner player ID, deck name, public flag, and comment text.
-5. THE DB SHALL contain a deck_cards table (or equivalent structure) recording the card ID and quantity for each card entry in a deck.
-6. WHEN the server starts, THE Server SHALL verify the database connection and schema integrity before accepting client connections.
+3. THE DB SHALL contain an expansions table with at minimum: expansion_id, expansion_name (unique), pack_art_filename, and expansion_description (text).
+4. THE DB SHALL contain a cards table with at minimum: card ID, card name, denomination, power text, card number, expansion_id (foreign key referencing the expansions table), and image filename.
+5. THE DB SHALL contain a decks table with at minimum: deck ID, owner player ID, deck name, public flag, and comment text.
+6. THE DB SHALL contain a deck_cards table (or equivalent structure) recording the card ID and quantity for each card entry in a deck.
+7. WHEN the server starts, THE Server SHALL verify the database connection and schema integrity before accepting client connections.
+
+---
+
+### Requirement 21: Player Disconnection and Reconnection
+
+**User Story:** As a player, I want to be able to reconnect to a game if my connection drops, so that I do not lose my seat or progress due to a temporary network issue.
+
+#### Acceptance Criteria
+
+1. WHEN the Server detects that a player's network connection has been lost during an active game session, THE Game_Engine SHALL mark that player as disconnected and begin a reconnection grace period equal to the configured Reconnection_Timeout value.
+2. THE Server SHALL allow the Reconnection_Timeout to be configured per game session at creation time, with a default value of 30 seconds.
+3. WHILE a player is in the disconnected state and the Reconnection_Timeout has not elapsed, THE Game_Engine SHALL skip that player's turn without marking the player as decked.
+4. WHEN the Reconnection_Timeout elapses and the disconnected player has not reconnected, THE Game_Engine SHALL assign an AI_Substitute to control that player's seat using the same automated decision-making strategy as computer-controlled players.
+5. WHILE an AI_Substitute controls a disconnected player's seat, THE Game_Engine SHALL use that player's existing hand, draw deck, play pile, and discard pile without modification.
+6. WHEN a previously disconnected player reconnects to the Server with a valid session token, THE Game_Engine SHALL immediately remove the AI_Substitute and restore full control of that seat to the reconnected player.
+7. WHEN a previously disconnected player reconnects, THE Game_Engine SHALL send the full current game state to that player's Client, including hand contents, all visible piles, scores, current sequence denomination, play direction, and active player.
+8. IF the game ends while a player is disconnected, THEN THE Game_Engine SHALL record that player's final score and include the player in the end-of-game results; the player SHALL be able to view the final results upon reconnecting.
+9. WHEN a player is marked as disconnected, THE Client SHALL display a visual indicator at that player's table position showing the disconnected status to all other players.
+10. WHILE an AI_Substitute controls a disconnected player's seat, THE Client SHALL display a distinct visual indicator at that player's table position showing that a computer player is controlling the seat.
+11. WHEN a disconnected player reconnects and resumes control, THE Client SHALL remove the disconnected or AI_Substitute indicator and display a brief notification to all players that the player has returned.
+
+---
+
+### Requirement 22: Game Spectating
+
+**User Story:** As a player, I want to watch an active game without participating, so that I can observe other players' strategies and enjoy the game.
+
+#### Acceptance Criteria
+
+1. WHEN an authenticated player submits a watch-game request for a session in the active state, THE Lobby_Service SHALL add the player as a Spectator to that session and return a success response.
+2. WHILE a Spectator is observing a game session, THE Game_Engine SHALL send visible game state updates to the Spectator including play piles, discard piles, draw deck card counts, scores, current sequence denomination, play direction, and the active player.
+3. WHILE a Spectator is observing a game session, THE Game_Engine SHALL NOT send any player's hand contents to the Spectator.
+4. THE Client SHALL provide a spectator view displaying the game table with all public information (play piles, discard piles, draw deck counts, scores, current sequence denomination, direction, and active player) without revealing any player's hand contents.
+5. WHEN a Spectator chooses to leave the game session, THE Lobby_Service SHALL remove the Spectator from the session without affecting the game state or active players.
+6. THE Client SHALL display the current number of Spectators watching the game at the game table, visible to all players and other Spectators.
+7. WHILE a player is a Spectator, THE Game_Engine SHALL NOT allow that player to perform any game actions (playing cards, drawing cards, or activating powers).

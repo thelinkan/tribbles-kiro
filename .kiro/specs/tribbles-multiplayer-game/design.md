@@ -86,7 +86,8 @@ graph TD
 - **Interface**:
   - `search_cards(filters: CardFilter) → List[Card]`
   - `get_card(card_id) → Card`
-  - `get_all_expansions() → List[str]`
+  - `get_all_expansions() → List[Expansion]`
+- **Note**: `get_all_expansions` returns `Expansion` objects containing `expansion_id`, `expansion_name`, `pack_art_filename`, and `expansion_description`. The expansion name can be resolved from an `expansion_id` via this method.
 
 #### Deck_Service
 - **Purpose**: CRUD operations on player decks.
@@ -98,12 +99,16 @@ graph TD
   - `list_public_decks() → List[DeckSummary]`
 
 #### Lobby_Service
-- **Purpose**: Game session creation, joining, and lifecycle management.
+- **Purpose**: Game session creation, joining, spectating, and lifecycle management.
 - **Interface**:
   - `create_game(player_id, deck_id, player_count) → Result[GameSessionID, Error]`
   - `join_game(player_id, deck_id, session_id) → Result[None, Error]`
   - `start_game(player_id, session_id) → Result[None, Error]`
   - `list_waiting_games() → List[GameSessionSummary]`
+  - `list_active_games() → List[GameSessionSummary]`
+  - `watch_game(player_id, session_id) → Result[None, Error]`
+- **Note**: `list_waiting_games` returns sessions available to join; `list_active_games` returns sessions available to watch. Together they populate the lobby's two-category game list.
+- **Validation**: `create_game` and `join_game` validate that the referenced deck has a total card count (sum of all card quantities) ≥ 35 before proceeding. Decks below this threshold are rejected with an error indicating the deck does not meet the minimum card count for game use.
 
 #### Game_Engine
 - **Purpose**: Core game logic, rule enforcement, turn management, power resolution.
@@ -111,6 +116,8 @@ graph TD
   - `initialise_game(session: GameSession) → GameState`
   - `process_action(game_id, player_id, action: PlayerAction) → Result[List[GameEvent], Error]`
   - `get_visible_state(game_id, player_id) → PlayerVisibleState`
+  - `get_spectator_visible_state(game_id) → SpectatorVisibleState`
+- **Note**: `get_spectator_visible_state` returns all public game state (play piles, discard piles, draw deck card counts, scores, current sequence, direction, active player) without any player's hand contents.
 - **Sub-components**:
   - `PowerResolver` — Dispatches and executes card power effects.
   - `TurnManager` — Tracks active player, direction, sequence.
@@ -123,9 +130,10 @@ graph TD
   - `apply_immediate_score(game_id, player_id, points) → None`
 
 #### AI_Controller
-- **Purpose**: Decision-making for computer-controlled players.
+- **Purpose**: Decision-making for computer-controlled players and AI_Substitute behaviour for disconnected players.
 - **Interface**:
   - `choose_action(game_state, player_id) → PlayerAction`
+- **Note**: The same strategy is used for both permanently computer-controlled seats and AI_Substitute seats (disconnected players after timeout). The AI_Controller operates on the disconnected player's existing hand, draw deck, play pile, and discard pile without modification.
 
 ### Client Components
 
@@ -133,11 +141,12 @@ graph TD
 - Manages WebSocket connection, message serialisation/deserialisation, reconnection.
 
 #### UI Scenes
-- `LoginScreen` — Server address, username, password entry.
+- `LoginScreen` — Server address, username, password entry with login/registration mode toggle.
 - `MainMenu` — Navigation to deck builder, lobby, settings.
 - `DeckBuilder` — Card search, deck editing, save/load/copy.
-- `LobbyScreen` — List waiting games, create/join.
+- `LobbyScreen` — Two-category game list: waiting/joinable sessions and active/watchable sessions. Actions: Create Game, Join Game, Watch Game.
 - `GameTable` — Virtual table, hand display, action buttons, score overlay.
+- `SpectatorView` — Read-only game table showing all public information (play piles, discard piles, draw deck counts, scores, sequence, direction, active player) without hand contents. No action buttons.
 - `EndOfRoundScreen` — Score summary popup.
 - `EndOfGameScreen` — Final rankings.
 - `SettingsScreen` — Language selection.
@@ -169,14 +178,22 @@ CREATE TABLE sessions (
     FOREIGN KEY (player_id) REFERENCES players(player_id)
 );
 
+CREATE TABLE expansions (
+    expansion_id INT AUTO_INCREMENT PRIMARY KEY,
+    expansion_name VARCHAR(128) NOT NULL UNIQUE,
+    pack_art_filename VARCHAR(255) NOT NULL,
+    expansion_description TEXT
+);
+
 CREATE TABLE cards (
     card_id INT AUTO_INCREMENT PRIMARY KEY,
     card_name VARCHAR(128) NOT NULL,
     denomination INT NOT NULL,
     power_text VARCHAR(255) NOT NULL,
     card_number VARCHAR(32) NOT NULL,
-    expansion_name VARCHAR(128) NOT NULL,
-    image_filename VARCHAR(255) NOT NULL
+    expansion_id INT NOT NULL,
+    image_filename VARCHAR(255) NOT NULL,
+    FOREIGN KEY (expansion_id) REFERENCES expansions(expansion_id)
 );
 
 CREATE TABLE decks (
@@ -207,7 +224,7 @@ class CardInstance:
     card_name: str
     denomination: int
     power_text: str
-    expansion_name: str
+    expansion_id: int
 
 @dataclass
 class PlayerState:
@@ -231,6 +248,7 @@ class PlayerState:
 class GameState:
     game_id: str
     players: List[PlayerState]  # ordered by seat position
+    spectators: List[int]  # list of player_ids watching the game
     current_player_index: int
     direction: int  # 1 = clockwise, -1 = counterclockwise
     current_sequence: int  # current expected denomination
@@ -239,6 +257,15 @@ class GameState:
     round_number: int
     frozen_powers: Dict[str, int]  # power_name → expires_at_player_index
     game_status: str  # "active", "round_end", "completed"
+    reconnection_timeout: int  # seconds; default 30, configurable per session
+
+@dataclass
+class DisconnectionState:
+    """Tracks disconnection status for a player within a game session."""
+    player_id: int
+    is_disconnected: bool  # True when connection lost, False when reconnected
+    disconnected_at: Optional[float]  # server timestamp when disconnection detected
+    ai_substitute_active: bool  # True after reconnection_timeout elapses without reconnect
 ```
 
 ### WebSocket Message Protocol
@@ -256,6 +283,13 @@ Messages are JSON objects with a `type` field and a `payload` field.
 {"type": "create_game", "payload": {"deck_id": 5, "player_count": 6}}
 {"type": "join_game", "payload": {"session_id": "abc123", "deck_id": 5}}
 {"type": "start_game", "payload": {"session_id": "abc123"}}
+{"type": "watch_game", "payload": {"session_id": "abc123"}}
+{"type": "leave_spectate", "payload": {"session_id": "abc123"}}
+```
+
+**Client → Server (Reconnection)**:
+```json
+{"type": "reconnect", "payload": {"session_id": "abc123"}}
 ```
 
 **Server → Client (Events)**:
@@ -265,6 +299,11 @@ Messages are JSON objects with a `type` field and a `payload` field.
 {"type": "round_end", "payload": {"scores": {...}}}
 {"type": "game_end", "payload": {"final_scores": {...}, "winner": "..."}}
 {"type": "error", "payload": {"code": "...", "message": "..."}}
+{"type": "disconnect_notify", "payload": {"player_id": 3, "username": "...", "grace_period_seconds": 30}}
+{"type": "reconnect_notify", "payload": {"player_id": 3, "username": "..."}}
+{"type": "reconnect_state_sync", "payload": {"hand": [...], "play_pile": [...], "draw_deck_count": 12, "discard_pile": [...], "scores": {...}, "current_sequence": 100, "direction": 1, "active_player_id": 5, "round_number": 2, "game_status": "active"}}
+{"type": "spectator_state_update", "payload": {"play_piles": {...}, "discard_piles": {...}, "draw_deck_counts": {...}, "scores": {...}, "current_sequence": 100, "direction": 1, "active_player_id": 5, "round_number": 2, "game_status": "active"}}
+{"type": "spectator_count_update", "payload": {"session_id": "abc123", "spectator_count": 3}}
 ```
 
 ---
@@ -663,6 +702,60 @@ Messages are JSON objects with a `type` field and a `payload` field.
 
 **Validates: Requirements 16.1, 16.2**
 
+### Property 66: Disconnection marks player and starts grace period
+
+*For any* active game state and any connected player, when a disconnection event is detected, the Game_Engine should mark that player as disconnected with a timestamp and begin a grace period equal to the session's configured Reconnection_Timeout value.
+
+**Validates: Requirements 21.1**
+
+### Property 67: Disconnected player's turn is skipped without decking
+
+*For any* game state where it is a disconnected player's turn and the Reconnection_Timeout has not elapsed, the Game_Engine should skip that player's turn (advancing to the next player) without marking the disconnected player as decked.
+
+**Validates: Requirements 21.3**
+
+### Property 68: AI_Substitute activation preserves player state
+
+*For any* disconnected player whose Reconnection_Timeout has elapsed, the Game_Engine should activate an AI_Substitute that uses the same AI_Controller strategy as computer-controlled players, operating on the disconnected player's existing hand, draw deck, play pile, and discard pile without modification.
+
+**Validates: Requirements 21.4, 21.5**
+
+### Property 69: Reconnection restores player control with full state sync
+
+*For any* game state with an AI_Substitute active for a disconnected player, when that player reconnects with a valid session token, the AI_Substitute should be immediately removed, full control restored to the player, and a state sync message sent containing hand contents, all visible piles, scores, current sequence denomination, play direction, and active player.
+
+**Validates: Requirements 21.6, 21.7**
+
+### Property 70: Game ending with disconnected player records score in results
+
+*For any* game that reaches the completed state while a player is disconnected, that player's final score should be recorded and the player should appear in the end-of-game results; the results should be retrievable when the player later reconnects.
+
+**Validates: Requirements 21.8**
+
+### Property 71: Deck size enforcement at game creation and joining
+
+*For any* deck with a total card count (sum of all card quantities) less than 35, both `create_game` and `join_game` should reject the request with an error. *For any* deck with a total card count greater than or equal to 35, the deck should be accepted by `create_game` and `join_game` (assuming all other parameters are valid).
+
+**Validates: Requirements 4.9, 4.10**
+
+### Property 72: Spectator receives only public state
+
+*For any* game session with one or more spectators, the state updates sent to a spectator should include play piles, discard piles, draw deck card counts, scores, current sequence denomination, play direction, and active player, but should never include any player's hand contents.
+
+**Validates: Requirements 22.2, 22.3**
+
+### Property 73: Spectator cannot perform game actions
+
+*For any* game session and any player who is a spectator of that session, any attempt by that player to perform a game action (playing a card, drawing a card, or activating a power) should be rejected by the Game_Engine with an error.
+
+**Validates: Requirements 22.7**
+
+### Property 74: Spectator leaving does not affect game state
+
+*For any* game session with one or more spectators, when a spectator leaves the session, the game state (players, current player, direction, sequence, scores, piles) should remain identical to the state immediately before the spectator left.
+
+**Validates: Requirements 22.5**
+
 
 ---
 
@@ -675,9 +768,10 @@ Messages are JSON objects with a `type` field and a `payload` field.
 | Authentication failures | Return generic "invalid credentials" without leaking which field failed. Log attempt with IP for rate-limiting. |
 | Authorisation failures | Return 403-equivalent error with reason code. Do not expose internal state. |
 | Invalid game actions | Return error with action rejection reason (e.g., "not your turn", "invalid card for current sequence"). Game state remains unchanged. |
-| WebSocket disconnection | Mark player as disconnected. Allow reconnection within a timeout window. If timeout expires during a game, AI takes over for that player. |
+| WebSocket disconnection | Mark player as disconnected; begin Reconnection_Timeout grace period (default 30 seconds, configurable per session). During grace period, skip the player's turn. If timeout expires without reconnection, activate AI_Substitute using the same AI_Controller strategy. On reconnection, immediately restore player control and send full state sync. |
 | Database errors | Retry transient failures (deadlocks, connection drops) up to 3 times. Return 500-equivalent error to client on persistent failure. |
 | Malformed messages | Log and discard. Return error with "invalid message format" code. |
+| Deck validation failures | When `create_game` or `join_game` references a deck with total card count < 35, return error with "deck below minimum card count" code. Game state remains unchanged. Client should prevent selection of under-sized decks, but server enforces as the authoritative check. |
 | Concurrent state modification | Use optimistic locking on game state. Reject stale actions with "state changed" error, prompting client to refresh. |
 
 ### Client-Side Error Strategy
@@ -736,6 +830,7 @@ The server's game logic is highly suitable for property-based testing because:
 - `valid_credentials()` — Generates random valid username/password/email
 - `card_with_power(power_name)` — Generates a card with a specific power
 - `compound_power_card()` — Generates a compound power card
+- `disconnected_game_state()` — Generates a valid game state with one or more players in disconnected/AI_Substitute state
 
 **Property test groupings**:
 1. **Auth properties** (Properties 1–3): Registration/login round-trips, token lifecycle
@@ -749,6 +844,8 @@ The server's game logic is highly suitable for property-based testing because:
 9. **Base power properties** (Properties 28–34): Individual power effects
 10. **Expansion power properties** (Properties 36–64): All expansion power effects
 11. **Game lifecycle properties** (Property 65): End-of-game conditions
+12. **Disconnection/reconnection properties** (Properties 66–70): Grace period, AI_Substitute, state sync
+13. **Spectator properties** (Properties 72–74): Public-only state, action rejection, leave invariance
 
 ### Unit Tests (Server — pytest)
 

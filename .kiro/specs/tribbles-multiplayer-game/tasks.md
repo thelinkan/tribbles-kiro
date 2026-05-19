@@ -33,8 +33,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - _Requirements: 18.2_
 
 
-- [ ] 2. Implement Auth_Service
-  - [ ] 2.1 Implement player registration and login
+- [x] 2. Implement Auth_Service
+  - [x] 2.1 Implement player registration and login
     - Create `server/src/auth/service.py` with `Auth_Service` class
     - Implement `register(username, password, email)` — hash password with bcrypt, insert into players table, return PlayerID
     - Implement `login(username, password)` — verify credentials, generate session token, insert into sessions table, return token

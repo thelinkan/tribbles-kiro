@@ -1,0 +1,1 @@
+"""Card catalogue repository package."""

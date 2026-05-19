@@ -7,7 +7,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
 ## Tasks
 
 - [ ] 1. Set up server project structure and database schema
-  - [ ] 1.1 Create Python server project with async WebSocket foundation
+  - [x] 1.1 Create Python server project with async WebSocket foundation
     - Create `server/` directory with `pyproject.toml` (dependencies: websockets, asyncio, aiomysql, pytest, hypothesis)
     - Create `server/src/` package structure: `auth/`, `cards/`, `decks/`, `lobby/`, `game/`, `scoring/`, `ai/`, `protocol/`
     - Create `server/src/main.py` entry point with asyncio WebSocket server skeleton
@@ -15,7 +15,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Create `server/src/protocol/handler.py` with WebSocket message router dispatching to services
     - _Requirements: 18.1, 18.2, 20.7_
 
-  - [ ] 1.2 Create MariaDB schema and migration script
+  - [x] 1.2 Create MariaDB schema and migration script
     - Create `server/db/schema.sql` with all tables: players, sessions, expansions, cards, decks, deck_cards
     - Include foreign keys, indexes, and constraints as defined in the design
     - Create `server/db/migrate.py` script to apply schema to a MariaDB instance

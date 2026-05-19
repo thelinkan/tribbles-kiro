@@ -166,6 +166,56 @@ class TestRegister:
         assert pid2 == 2
 
 
+class TestPasswordHashingNotReversible:
+    """Tests that password hashing is one-way and not reversible."""
+
+    @pytest.mark.asyncio
+    async def test_stored_hash_does_not_contain_original_password(self, auth_service):
+        """The stored hash must not contain the plaintext password as a substring."""
+        password = "my_secret_password_123"
+        await auth_service.register("hashtest", password, "hash@example.com")
+        storage = auth_service._pool._storage
+        stored_hash = storage["players"][1]["password_hash"]
+        # The hash should never contain the original password
+        assert password not in stored_hash
+
+    @pytest.mark.asyncio
+    async def test_same_password_produces_different_hashes(self, auth_service):
+        """Bcrypt uses a random salt, so the same password should produce different hashes each time."""
+        password = "identical_password"
+        await auth_service.register("user_a", password, "a@example.com")
+        await auth_service.register("user_b", password, "b@example.com")
+        storage = auth_service._pool._storage
+        hash_a = storage["players"][1]["password_hash"]
+        hash_b = storage["players"][2]["password_hash"]
+        # Different salts mean different hashes even for the same password
+        assert hash_a != hash_b
+
+    @pytest.mark.asyncio
+    async def test_hash_cannot_be_decoded_to_original_password(self, auth_service):
+        """The bcrypt hash is a one-way function — there is no decode operation.
+
+        We verify this by confirming the hash is a valid bcrypt string (starts with $2b$)
+        and that only the correct password verifies against it, while similar passwords do not.
+        """
+        password = "correct_horse_battery_staple"
+        await auth_service.register("decode_test", password, "decode@example.com")
+        storage = auth_service._pool._storage
+        stored_hash = storage["players"][1]["password_hash"]
+
+        # Hash is a bcrypt hash (starts with $2b$ or $2a$)
+        assert stored_hash.startswith("$2b$") or stored_hash.startswith("$2a$")
+
+        # Only the exact original password verifies
+        assert bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
+
+        # Similar but different passwords do NOT verify
+        assert not bcrypt.checkpw(b"correct_horse_battery_stapl", stored_hash.encode("utf-8"))
+        assert not bcrypt.checkpw(b"Correct_horse_battery_staple", stored_hash.encode("utf-8"))
+        assert not bcrypt.checkpw(b"correct_horse_battery_staple ", stored_hash.encode("utf-8"))
+        assert not bcrypt.checkpw(b"", stored_hash.encode("utf-8"))
+
+
 class TestLogin:
     """Tests for AuthService.login."""
 

@@ -88,6 +88,7 @@ graph TD
   - `get_card(card_id) → Card`
   - `get_all_expansions() → List[Expansion]`
 - **Note**: `get_all_expansions` returns `Expansion` objects containing `expansion_id`, `expansion_name`, `pack_art_filename`, and `expansion_description`. The expansion name can be resolved from an `expansion_id` via this method.
+- **Image filename convention**: `{card_number}_{denomination}_{power}.jpg` — e.g., `14V_10_go.jpg` (card number `14V`, denomination `10`, power `go`). Compound powers use `&` in the filename (e.g., `22V_1000_clone&reverse.jpg`).
 
 #### Deck_Service
 - **Purpose**: CRUD operations on player decks.
@@ -192,7 +193,7 @@ CREATE TABLE cards (
     power_text VARCHAR(255) NOT NULL,
     card_number VARCHAR(32) NOT NULL,
     expansion_id INT NOT NULL,
-    image_filename VARCHAR(255) NOT NULL,
+    image_filename VARCHAR(255) NOT NULL,  -- Format: {card_number}_{denomination}_{power}.jpg e.g. 14V_10_go.jpg
     FOREIGN KEY (expansion_id) REFERENCES expansions(expansion_id)
 );
 

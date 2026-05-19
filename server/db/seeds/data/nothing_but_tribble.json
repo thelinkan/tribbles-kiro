@@ -1,0 +1,44 @@
+[
+    {
+        "card_name": "Tribble - Stampede",
+        "denomination": 1,
+        "power_text": "All players may play a card of the current sequence denomination; only your power activates.",
+        "card_number": "35V",
+        "image_filename": "35V_1_stampede.jpg"
+    },
+    {
+        "card_name": "Tribble - Discard",
+        "denomination": 10,
+        "power_text": "Discard one card from your hand.",
+        "card_number": "36V",
+        "image_filename": "36V_10_discard.jpg"
+    },
+    {
+        "card_name": "Tribble - Reverse",
+        "denomination": 100,
+        "power_text": "Reverse the direction of play.",
+        "card_number": "37V",
+        "image_filename": "37V_100_reverse.jpg"
+    },
+    {
+        "card_name": "Tribble - Skip",
+        "denomination": 1000,
+        "power_text": "Skip the next player's turn.",
+        "card_number": "38V",
+        "image_filename": "38V_1000_skip.jpg"
+    },
+    {
+        "card_name": "Tribble - Rescue",
+        "denomination": 10000,
+        "power_text": "Take a card from your discard pile and place it on top of your draw deck.",
+        "card_number": "39V",
+        "image_filename": "39V_10000_rescue.jpg"
+    },
+    {
+        "card_name": "Tribble - Poison",
+        "denomination": 100000,
+        "power_text": "Discard the top card of target player's draw deck and score its denomination.",
+        "card_number": "40V",
+        "image_filename": "40V_100000_poison.jpg"
+    }
+]

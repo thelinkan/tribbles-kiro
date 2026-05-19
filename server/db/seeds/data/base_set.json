@@ -1,0 +1,107 @@
+[
+    {
+        "card_name": "Tribble - Discard",
+        "denomination": 1,
+        "power_text": "Discard one card from your hand.",
+        "card_number": "BS1",
+        "image_filename": "BS1_1_discard.jpg"
+    },
+    {
+        "card_name": "Tribble - Go",
+        "denomination": 1,
+        "power_text": "Take another turn immediately.",
+        "card_number": "BS2",
+        "image_filename": "BS2_1_go.jpg"
+    },
+    {
+        "card_name": "Tribble - Skip",
+        "denomination": 1,
+        "power_text": "Skip the next player's turn.",
+        "card_number": "BS3",
+        "image_filename": "BS3_1_skip.jpg"
+    },
+    {
+        "card_name": "Tribble - Go",
+        "denomination": 10,
+        "power_text": "Take another turn immediately.",
+        "card_number": "BS4",
+        "image_filename": "BS4_10_go.jpg"
+    },
+    {
+        "card_name": "Tribble - Poison",
+        "denomination": 10,
+        "power_text": "Discard the top card of target player's draw deck and score its denomination.",
+        "card_number": "BS5",
+        "image_filename": "BS5_10_poison.jpg"
+    },
+    {
+        "card_name": "Tribble - Skip",
+        "denomination": 10,
+        "power_text": "Skip the next player's turn.",
+        "card_number": "BS6",
+        "image_filename": "BS6_10_skip.jpg"
+    },
+    {
+        "card_name": "Tribble - Poison",
+        "denomination": 100,
+        "power_text": "Discard the top card of target player's draw deck and score its denomination.",
+        "card_number": "BS7",
+        "image_filename": "BS7_100_poison.jpg"
+    },
+    {
+        "card_name": "Tribble - Rescue",
+        "denomination": 100,
+        "power_text": "Take a card from your discard pile and place it on top of your draw deck.",
+        "card_number": "BS8",
+        "image_filename": "BS8_100_rescue.jpg"
+    },
+    {
+        "card_name": "Tribble - Reverse",
+        "denomination": 100,
+        "power_text": "Reverse the direction of play.",
+        "card_number": "BS9",
+        "image_filename": "BS9_100_reverse.jpg"
+    },
+    {
+        "card_name": "Tribble - Discard",
+        "denomination": 1000,
+        "power_text": "Discard one card from your hand.",
+        "card_number": "BS10",
+        "image_filename": "BS10_1000_discard.jpg"
+    },
+    {
+        "card_name": "Tribble - Rescue",
+        "denomination": 1000,
+        "power_text": "Take a card from your discard pile and place it on top of your draw deck.",
+        "card_number": "BS11",
+        "image_filename": "BS11_1000_rescue.jpg"
+    },
+    {
+        "card_name": "Tribble - Reverse",
+        "denomination": 1000,
+        "power_text": "Reverse the direction of play.",
+        "card_number": "BS12",
+        "image_filename": "BS12_1000_reverse.jpg"
+    },
+    {
+        "card_name": "Tribble - Clone",
+        "denomination": 10000,
+        "power_text": "Play this card when its denomination matches the last played denomination.",
+        "card_number": "BS13",
+        "image_filename": "BS13_10000_clone.jpg"
+    },
+    {
+        "card_name": "Tribble - Reverse",
+        "denomination": 10000,
+        "power_text": "Reverse the direction of play.",
+        "card_number": "BS14",
+        "image_filename": "BS14_10000_reverse.jpg"
+    },
+    {
+        "card_name": "Tribble - Skip",
+        "denomination": 10000,
+        "power_text": "Skip the next player's turn.",
+        "card_number": "BS15",
+        "image_filename": "BS15_10000_skip.jpg"
+    }
+]

@@ -1,0 +1,44 @@
+[
+    {
+        "card_name": "Tribble - Battle",
+        "denomination": 1,
+        "power_text": "Both players reveal top 3 cards; higher total wins all 6 cards under their play pile.",
+        "card_number": "23V",
+        "image_filename": "23V_1_battle.jpg"
+    },
+    {
+        "card_name": "Tribble - Evolve",
+        "denomination": 10,
+        "power_text": "Move your hand to discard pile, then draw the same number of cards.",
+        "card_number": "24V",
+        "image_filename": "24V_10_evolve.jpg"
+    },
+    {
+        "card_name": "Tribble - Freeze",
+        "denomination": 100,
+        "power_text": "Name a power; that power cannot be played until your next turn.",
+        "card_number": "25V",
+        "image_filename": "25V_100_freeze.jpg"
+    },
+    {
+        "card_name": "Tribble - Mutate",
+        "denomination": 1000,
+        "power_text": "Shuffle your play pile into your draw deck, then move the same number of cards from draw deck to play pile.",
+        "card_number": "26V",
+        "image_filename": "26V_1000_mutate.jpg"
+    },
+    {
+        "card_name": "Tribble - Process",
+        "denomination": 10000,
+        "power_text": "Draw 3 cards, then place 2 cards from your hand under your draw deck.",
+        "card_number": "27V",
+        "image_filename": "27V_10000_process.jpg"
+    },
+    {
+        "card_name": "Tribble - Safety",
+        "denomination": 100000,
+        "power_text": "At round end, if you did not go out, shuffle your hand into your draw deck instead of discarding.",
+        "card_number": "28V",
+        "image_filename": "28V_100000_safety.jpg"
+    }
+]

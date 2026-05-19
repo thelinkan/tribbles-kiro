@@ -1,0 +1,44 @@
+[
+    {
+        "card_name": "Tribble - Tally",
+        "denomination": 1,
+        "power_text": "When scored, half the denomination goes to the scorer and half to this card's owner.",
+        "card_number": "29V",
+        "image_filename": "29V_1_tally.jpg"
+    },
+    {
+        "card_name": "Tribble - Toxin",
+        "denomination": 10,
+        "power_text": "Each opponent reveals cards from draw deck equal to Discard cards in their play pile; score one revealed card's denomination.",
+        "card_number": "30V",
+        "image_filename": "30V_10_toxin.jpg"
+    },
+    {
+        "card_name": "Tribble - Avalanche",
+        "denomination": 100,
+        "power_text": "If you have at least 4 other cards in hand, all players discard one card; you discard one additional.",
+        "card_number": "31V",
+        "image_filename": "31V_100_avalanche.jpg"
+    },
+    {
+        "card_name": "Tribble - Famine",
+        "denomination": 1000,
+        "power_text": "Reset the sequence to 1.",
+        "card_number": "32V",
+        "image_filename": "32V_1000_famine.jpg"
+    },
+    {
+        "card_name": "Tribble - Go",
+        "denomination": 10000,
+        "power_text": "Take another turn immediately.",
+        "card_number": "33V",
+        "image_filename": "33V_10000_go.jpg"
+    },
+    {
+        "card_name": "Tribble - Clone & Go",
+        "denomination": 100000,
+        "power_text": "Play as the last denomination played and take another turn.",
+        "card_number": "34V",
+        "image_filename": "34V_100000_clone&go.jpg"
+    }
+]

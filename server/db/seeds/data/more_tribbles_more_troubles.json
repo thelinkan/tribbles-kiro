@@ -1,0 +1,44 @@
+[
+    {
+        "card_name": "Tribble - Exchange",
+        "denomination": 1,
+        "power_text": "Discard one card from your hand and take one card from your discard pile.",
+        "card_number": "17V",
+        "image_filename": "17V_1_exchange.jpg"
+    },
+    {
+        "card_name": "Tribble - Kill",
+        "denomination": 10,
+        "power_text": "Move the top card of target player's play pile to their discard pile.",
+        "card_number": "18V",
+        "image_filename": "18V_10_kill.jpg"
+    },
+    {
+        "card_name": "Tribble - Recycle",
+        "denomination": 100,
+        "power_text": "Shuffle target player's discard pile into their draw deck.",
+        "card_number": "19V",
+        "image_filename": "19V_100_recycle.jpg"
+    },
+    {
+        "card_name": "Tribble - Score",
+        "denomination": 1000,
+        "power_text": "Target a player; if they play a card on their next turn, you score its denomination.",
+        "card_number": "20V",
+        "image_filename": "20V_1000_score.jpg"
+    },
+    {
+        "card_name": "Tribble - Clone & Reverse",
+        "denomination": 1000,
+        "power_text": "Play as the last denomination played and reverse direction.",
+        "card_number": "21V",
+        "image_filename": "21V_1000_clone&reverse.jpg"
+    },
+    {
+        "card_name": "Tribble - Quadruple",
+        "denomination": 10000,
+        "power_text": "This card contributes 40000 points instead of 10000 when scoring.",
+        "card_number": "22V",
+        "image_filename": "22V_10000_quadruple.jpg"
+    }
+]

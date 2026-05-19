@@ -1,0 +1,44 @@
+[
+    {
+        "card_name": "Tribble - Clone",
+        "denomination": 1,
+        "power_text": "Play this card as if it had the same denomination as the last card played.",
+        "card_number": "11V",
+        "image_filename": "11V_1_clone.jpg"
+    },
+    {
+        "card_name": "Tribble - Antidote",
+        "denomination": 10,
+        "power_text": "When targeted by Poison, score the points instead and place your hand beneath your draw deck.",
+        "card_number": "12V",
+        "image_filename": "12V_10_antidote.jpg"
+    },
+    {
+        "card_name": "Tribble - Copy",
+        "denomination": 100,
+        "power_text": "Copy the power of the top card on target player's play pile.",
+        "card_number": "13V",
+        "image_filename": "13V_100_copy.jpg"
+    },
+    {
+        "card_name": "Tribble - Go",
+        "denomination": 10,
+        "power_text": "Take another turn immediately.",
+        "card_number": "14V",
+        "image_filename": "14V_10_go.jpg"
+    },
+    {
+        "card_name": "Tribble - Cycle",
+        "denomination": 1000,
+        "power_text": "Place one card from your hand under your draw deck, then draw one card.",
+        "card_number": "15V",
+        "image_filename": "15V_1000_cycle.jpg"
+    },
+    {
+        "card_name": "Tribble - Draw",
+        "denomination": 10000,
+        "power_text": "Target player draws one card from their draw deck.",
+        "card_number": "16V",
+        "image_filename": "16V_10000_draw.jpg"
+    }
+]

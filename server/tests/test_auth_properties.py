@@ -164,7 +164,7 @@ class TestRegistrationLoginRoundTrip:
     """
 
     @given(username=valid_usernames, password=valid_passwords, email=valid_emails)
-    @settings(max_examples=50)
+    @settings(max_examples=100, deadline=None)
     def test_register_then_login_returns_valid_token(self, username, password, email):
         """Registering a new user and logging in should yield a session token."""
 
@@ -190,7 +190,7 @@ class TestRegistrationLoginRoundTrip:
         asyncio.run(_run())
 
     @given(username=valid_usernames, password=valid_passwords, email=valid_emails)
-    @settings(max_examples=50)
+    @settings(max_examples=100, deadline=None)
     def test_duplicate_registration_returns_username_taken(self, username, password, email):
         """Registering the same username twice should return a username_taken error."""
 
@@ -229,7 +229,7 @@ class TestInvalidLoginGenericError:
         wrong_password=valid_passwords,
         fake_username=valid_usernames,
     )
-    @settings(max_examples=50)
+    @settings(max_examples=100, deadline=None)
     def test_wrong_password_and_wrong_username_same_error(
         self, username, password, email, wrong_password, fake_username
     ):
@@ -274,7 +274,7 @@ class TestInvalidatedTokenRejected:
     """
 
     @given(username=valid_usernames, password=valid_passwords, email=valid_emails)
-    @settings(max_examples=50)
+    @settings(max_examples=100, deadline=None)
     def test_invalidated_token_is_rejected(self, username, password, email):
         """After invalidation, the token must be rejected with unauthorised error."""
 

@@ -43,13 +43,13 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Return generic error on invalid login without revealing which field failed
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
-  - [ ]* 2.2 Write property tests for Auth_Service
+  - [x]* 2.2 Write property tests for Auth_Service
     - **Property 1: Registration and login round-trip**
     - **Property 2: Invalid login does not reveal which field is wrong**
     - **Property 3: Invalidated token is rejected**
     - **Validates: Requirements 1.2, 1.3, 1.4, 1.5, 1.6**
 
-  - [ ]* 2.3 Write unit tests for Auth_Service
+  - [x]* 2.3 Write unit tests for Auth_Service
     - Test duplicate username registration returns error
     - Test expired token rejection
     - Test password hashing is not reversible

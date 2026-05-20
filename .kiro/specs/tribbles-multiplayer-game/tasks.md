@@ -105,20 +105,20 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Property 71: Deck size enforcement at game creation and joining**
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.6, 4.9, 4.10**
 
-- [ ] 6. Checkpoint — Foundation services complete
+- [x] 6. Checkpoint — Foundation services complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Implement Game_Engine — Initialisation and turn mechanics
-  - [ ] 7.1 Implement game initialisation
+- [x] 7. Implement Game_Engine — Initialisation and turn mechanics
+  - [x] 7.1 Implement game initialisation
     - Create `server/src/game/engine.py` with `Game_Engine` class
     - Implement `initialise_game(session)` — assign random seat positions, select random starting player, shuffle draw decks, deal 7 cards each, set direction clockwise, sequence to 1
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-  - [ ]* 7.2 Write property test for game initialisation
+  - [x]* 7.2 Write property test for game initialisation
     - **Property 15: Game initialisation invariants**
     - **Validates: Requirements 5.1, 5.2, 5.4**
 
-  - [ ] 7.3 Implement core turn mechanics
+  - [x] 7.3 Implement core turn mechanics
     - Implement `process_action(game_id, player_id, action)` for play_card and draw_card actions
     - Validate turn: only active player can act
     - Play card: validate denomination matches sequence (or Clone matches last_played), move card to play pile, advance sequence
@@ -128,7 +128,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Handle 100000 → 1 sequence wrap
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9_
 
-  - [ ]* 7.4 Write property tests for turn mechanics
+  - [x]* 7.4 Write property tests for turn mechanics
     - **Property 16: Turn validity — play or draw**
     - **Property 17: Playing a card advances sequence correctly**
     - **Property 18: Drawing a card moves top of draw deck to hand**
@@ -137,7 +137,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Property 21: Last played denomination tracked independently**
     - **Validates: Requirements 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9**
 
-  - [ ] 7.5 Implement decked state logic
+  - [x] 7.5 Implement decked state logic
     - When draw deck is empty and draw required, mark player as decked
     - Move all hand cards to discard pile immediately
     - Prevent scoring to/from decked player (except Antidote)
@@ -146,7 +146,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - When all but one player decked, last player goes out (hand → play pile)
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-  - [ ]* 7.6 Write property tests for decked state
+  - [x]* 7.6 Write property tests for decked state
     - **Property 22: Decked state invariants**
     - **Property 23: Decked player is valid power target**
     - **Property 24: Last non-decked player goes out**

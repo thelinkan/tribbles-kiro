@@ -67,6 +67,21 @@ class PlayerState:
 
 
 @dataclass
+class PendingDraw:
+    """Tracks a pending draw choice when a drawn card matches the current sequence.
+
+    Attributes:
+        player_id: The player who drew the card.
+        card: The drawn card instance.
+        matches_sequence: True if the drawn card matches the current sequence denomination.
+    """
+
+    player_id: int
+    card: CardInstance
+    matches_sequence: bool
+
+
+@dataclass
 class GameState:
     """Represents the complete state of an active game session.
 
@@ -83,6 +98,7 @@ class GameState:
         frozen_powers: Map of power names to the player index when freeze expires.
         game_status: Current status ("active", "round_end", or "completed").
         reconnection_timeout: Seconds to wait before activating AI substitute.
+        pending_draw: Tracks a pending draw choice when a drawn card matches the sequence.
     """
 
     game_id: str
@@ -97,6 +113,7 @@ class GameState:
     frozen_powers: Dict[str, int] = field(default_factory=dict)
     game_status: str = "active"
     reconnection_timeout: int = 30
+    pending_draw: Optional[PendingDraw] = None
 
 
 @dataclass

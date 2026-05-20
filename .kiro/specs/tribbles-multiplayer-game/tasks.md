@@ -55,7 +55,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Test password hashing is not reversible
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
-- [ ] 3. Implement Card_Repository
+- [x] 3. Implement Card_Repository
   - [x] 3.1 Implement card catalogue access
     - Create `server/src/cards/repository.py` with `Card_Repository` class
     - Implement `search_cards(filters: CardFilter)` — build dynamic SQL query from filter params (denomination, power_name, expansion, card_name_substring)
@@ -69,8 +69,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Property 5: Compound powers are distinct from component powers**
     - **Validates: Requirements 2.3, 2.5**
 
-- [ ] 4. Implement Deck_Service
-  - [ ] 4.1 Implement deck CRUD operations
+- [x] 4. Implement Deck_Service
+  - [x] 4.1 Implement deck CRUD operations
     - Create `server/src/decks/service.py` with `Deck_Service` class
     - Implement `save_deck(player_id, deck_data)` — insert into decks + deck_cards tables, allow any card count
     - Implement `load_deck(player_id, deck_id)` — load deck if owned or public
@@ -79,7 +79,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Implement `list_public_decks()` — list all public decks
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.10_
 
-  - [ ]* 4.2 Write property tests for Deck_Service
+  - [x]* 4.2 Write property tests for Deck_Service
     - **Property 6: Deck save/load round-trip**
     - **Property 7: Public deck access**
     - **Property 8: Deck copy produces identical card entries**

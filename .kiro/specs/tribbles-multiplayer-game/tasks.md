@@ -87,8 +87,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Validates: Requirements 3.2, 3.3, 3.4, 3.5, 3.6, 3.7**
 
 
-- [ ] 5. Implement Lobby_Service
-  - [ ] 5.1 Implement game session creation and joining
+- [x] 5. Implement Lobby_Service
+  - [x] 5.1 Implement game session creation and joining
     - Create `server/src/lobby/service.py` with `Lobby_Service` class
     - Implement `create_game(player_id, deck_id, player_count)` — validate player_count 4–8, validate deck ≥ 35 cards, create session in waiting state
     - Implement `join_game(player_id, deck_id, session_id)` — validate session is waiting and not full, validate deck ≥ 35 cards, add player
@@ -97,7 +97,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Implement `watch_game(player_id, session_id)` — add player as spectator if session is active
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.6, 4.9, 4.10, 4.11, 22.1_
 
-  - [ ]* 5.2 Write property tests for Lobby_Service
+  - [x]* 5.2 Write property tests for Lobby_Service
     - **Property 10: Game session creation with valid player count**
     - **Property 11: Join game adds player when session is waiting and not full**
     - **Property 12: Join game rejected for non-waiting or full session**

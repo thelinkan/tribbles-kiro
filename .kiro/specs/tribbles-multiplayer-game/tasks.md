@@ -56,7 +56,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
 - [ ] 3. Implement Card_Repository
-  - [ ] 3.1 Implement card catalogue access
+  - [x] 3.1 Implement card catalogue access
     - Create `server/src/cards/repository.py` with `Card_Repository` class
     - Implement `search_cards(filters: CardFilter)` — build dynamic SQL query from filter params (denomination, power_name, expansion, card_name_substring)
     - Implement `get_card(card_id)` — single card lookup
@@ -64,7 +64,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Ensure compound powers are treated as distinct identities in search
     - _Requirements: 2.1, 2.3, 2.4, 2.5, 2.8_
 
-  - [ ]* 3.2 Write property tests for Card_Repository
+  - [x]* 3.2 Write property tests for Card_Repository
     - **Property 4: Card search filter correctness**
     - **Property 5: Compound powers are distinct from component powers**
     - **Validates: Requirements 2.3, 2.5**

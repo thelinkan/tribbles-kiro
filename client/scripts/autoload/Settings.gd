@@ -13,7 +13,7 @@ const SETTINGS_PATH: String = "user://settings.cfg"
 ## Default locale if no preference is saved.
 const DEFAULT_LOCALE: String = "en"
 ## Supported locales.
-const SUPPORTED_LOCALES: PackedStringArray = PackedStringArray(["en", "sv"])
+const SUPPORTED_LOCALES: Array[String] = ["en", "sv"]
 
 # ─── State ──────────────────────────────────────────────────────────────────────
 ## The currently active locale code.

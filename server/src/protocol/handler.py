@@ -80,6 +80,17 @@ class MessageHandler:
             logger.warning("Invalid message from %s: %s", websocket.remote_address, e)
             return error_message("invalid_message", str(e))
 
+        # Extract token from top-level message if not in payload
+        # (client sends token at top level: {"type": ..., "payload": ..., "token": ...})
+        import json as _json
+        try:
+            full_msg = _json.loads(raw_message)
+            top_level_token = full_msg.get("token")
+            if top_level_token and "token" not in payload:
+                payload["token"] = top_level_token
+        except (ValueError, TypeError):
+            pass
+
         logger.debug("Routing '%s' from %s", msg_type, websocket.remote_address)
 
         try:

@@ -328,7 +328,7 @@ class MessageHandler:
         # If deck_id is present, update the existing deck instead of creating new
         existing_deck_id = deck_data.get("deck_id") or payload.get("deck_id")
         if existing_deck_id:
-            updated = await self._deck_service.update_deck(player_id, int(existing_deck_id), deck_data)
+            updated = await self._deck_service.update_deck(player_id, int(float(existing_deck_id)), deck_data)
             if updated:
                 return encode_message("deck_response", {"action": "deck_saved", "deck_id": int(existing_deck_id)})
             # If update failed (not owned), fall through to create new

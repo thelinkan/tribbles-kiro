@@ -94,6 +94,7 @@ class PendingPower:
             - "choose_target": Waiting for player to choose a target (e.g., Poison, Rescue).
             - "choose_card": Waiting for player to choose a card (e.g., Discard).
         options: Optional list of valid choices for the current phase.
+        toxin_revealed: Optional list of (player_index, CardInstance) tuples for Toxin resolution.
     """
 
     player_index: int
@@ -101,6 +102,7 @@ class PendingPower:
     power_name: str
     phase: str = "activate_or_decline"
     options: Optional[List[int]] = None
+    toxin_revealed: Optional[List[tuple]] = None
 
 
 @dataclass

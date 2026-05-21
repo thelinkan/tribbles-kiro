@@ -243,8 +243,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Property 43: Score power delayed scoring**
     - **Validates: Requirements 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.9**
 
-- [ ] 13. Implement Card Powers — No Tribble at All Expansion
-  - [ ] 13.1 Implement compound power rules and expansion 4 powers
+- [x] 13. Implement Card Powers — No Tribble at All Expansion
+  - [x] 13.1 Implement compound power rules and expansion 4 powers
     - Implement compound power activation logic: both powers activate together unless one is Clone
     - Implement Battle power: reveal top 3 of both players' draw decks, higher total wins all 6 cards under play pile, loser discards
     - Implement Evolve power: count hand, move hand to discard, draw same count from deck
@@ -257,7 +257,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Implement Toxin power: for each Discard card in opponents' play piles, reveal top of their draw deck; active player chooses one to score; all revealed go to owners' hands
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 12.10, 12.11, 12.12, 12.13_
 
-  - [ ]* 13.2 Write property tests for expansion 4 powers
+  - [x]* 13.2 Write property tests for expansion 4 powers
     - **Property 44: Compound power activation rules**
     - **Property 45: Battle resolution**
     - **Property 46: Evolve preserves hand count**

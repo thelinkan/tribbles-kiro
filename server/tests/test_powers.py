@@ -123,10 +123,10 @@ class TestGetActivatablePower:
         assert self.resolver.get_activatable_power(card) == "reverse"
 
     def test_compound_power_without_clone(self):
-        """Compound power without Clone returns the first activatable component."""
+        """Compound power without Clone returns both powers joined by &."""
         card = make_card(power_text="Go & Skip")
         result = self.resolver.get_activatable_power(card)
-        assert result in ("go", "skip")
+        assert result == "go&skip"
 
     def test_non_activatable_power(self):
         """Non-activatable powers return None."""

@@ -21,6 +21,8 @@ ACTIVATABLE_POWERS = {
     "discard", "go", "skip", "poison", "rescue", "reverse",
     # Expansion 3: More Tribbles More Troubles
     "copy", "cycle", "draw", "exchange", "kill", "recycle", "replay", "score",
+    # Expansion 4: No Tribble at All
+    "battle", "evolve", "freeze", "mutate", "process", "toxin",
 }
 
 # Powers that require a target or choice after activation
@@ -28,13 +30,15 @@ POWERS_NEEDING_TARGET = {
     "discard", "poison", "rescue",
     # Expansion 3
     "copy", "cycle", "draw", "exchange", "kill", "recycle", "replay", "score",
+    # Expansion 4
+    "battle", "freeze", "process", "toxin",
 }
 
 # Powers that execute immediately on activation (no target needed)
-IMMEDIATE_POWERS = {"go", "skip", "reverse"}
+IMMEDIATE_POWERS = {"go", "skip", "reverse", "evolve", "mutate"}
 
 # Antidote is a passive power — it triggers during Poison resolution, not actively played
-PASSIVE_POWERS = {"antidote"}
+PASSIVE_POWERS = {"antidote", "quadruple", "safety", "tally"}
 
 
 class PowerResolver:
@@ -72,11 +76,15 @@ class PowerResolver:
         For compound powers (e.g., "Clone & Reverse"), returns the non-Clone
         component if one exists. Clone itself has no activation effect.
 
+        For compound powers where neither component is Clone, returns both
+        power names joined by "&" to indicate both must activate together.
+
         Args:
             card: The card to check.
 
         Returns:
             The power name (lowercase) if the card has an activatable power,
+            or a compound string "power1&power2" if both must activate,
             or None if it has no activatable power.
         """
         power_text = card.power_text.lower().strip()
@@ -84,17 +92,44 @@ class PowerResolver:
         # Handle compound powers (e.g., "clone & reverse")
         if "&" in power_text:
             parts = [p.strip() for p in power_text.split("&")]
-            # Filter out "clone" — it has no activation effect
+            has_clone = "clone" in parts
             activatable_parts = [p for p in parts if p in ACTIVATABLE_POWERS]
-            if activatable_parts:
-                return activatable_parts[0]
-            return None
+
+            if has_clone:
+                # If one is Clone: only the non-Clone power activates independently
+                # (Clone usage is determined by _is_valid_play in GameEngine)
+                non_clone_parts = [p for p in activatable_parts if p != "clone"]
+                if non_clone_parts:
+                    return non_clone_parts[0]
+                return None
+            else:
+                # Neither is Clone: both powers must activate together
+                if len(activatable_parts) >= 2:
+                    return "&".join(activatable_parts)
+                elif len(activatable_parts) == 1:
+                    return activatable_parts[0]
+                return None
 
         # Simple power
         if power_text in ACTIVATABLE_POWERS:
             return power_text
 
         return None
+
+    def get_compound_powers(self, card: CardInstance) -> Optional[List[str]]:
+        """Get the list of individual activatable powers from a compound card.
+
+        Args:
+            card: The card to check.
+
+        Returns:
+            A list of power names if compound, or None if not compound.
+        """
+        power_text = card.power_text.lower().strip()
+        if "&" not in power_text:
+            return None
+        parts = [p.strip() for p in power_text.split("&")]
+        return [p for p in parts if p in ACTIVATABLE_POWERS]
 
     def create_power_prompt(
         self, game_state: GameState, player_index: int, card: CardInstance
@@ -211,6 +246,27 @@ class PowerResolver:
         # Activate the power
         power_name = pending.power_name
 
+        # Handle compound powers (both must activate together)
+        if "&" in power_name:
+            # Both powers activate together — execute them sequentially
+            parts = [p.strip() for p in power_name.split("&")]
+            game_state.pending_power = None
+            all_events = []
+            for part in parts:
+                if part in IMMEDIATE_POWERS:
+                    events = self._execute_immediate_power(game_state, player_index, part)
+                    all_events.extend(events)
+                elif part in POWERS_NEEDING_TARGET:
+                    # For compound powers with target-needing components,
+                    # set up the first target-needing power as pending
+                    pending.power_name = part
+                    pending.phase = "choose_target"
+                    game_state.pending_power = pending
+                    prompt_events = self._create_target_prompt(game_state, player_index, part)
+                    all_events.extend(prompt_events)
+                    return all_events
+            return all_events
+
         # Immediate powers: execute right away
         if power_name in IMMEDIATE_POWERS:
             game_state.pending_power = None
@@ -244,6 +300,10 @@ class PowerResolver:
             return self._execute_skip(game_state, player_index)
         elif power_name == "reverse":
             return self._execute_reverse(game_state, player_index)
+        elif power_name == "evolve":
+            return self._execute_evolve(game_state, player_index)
+        elif power_name == "mutate":
+            return self._execute_mutate(game_state, player_index)
         return []
 
     def _execute_go(self, game_state: GameState, player_index: int) -> List[dict]:
@@ -529,6 +589,112 @@ class PowerResolver:
                 }
             ]
 
+        elif power_name == "battle":
+            # Prompt to choose an opponent with at least 3 cards in draw deck
+            valid_targets = []
+            for i, p in enumerate(game_state.players):
+                if i != player_index and len(p.draw_deck) >= 3:
+                    valid_targets.append(i)
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_target_player",
+                    "player_id": player.player_id,
+                    "power_name": "battle",
+                    "options": valid_targets,
+                    "message": "Choose an opponent to battle (both reveal top 3 of draw deck).",
+                }
+            ]
+
+        elif power_name == "freeze":
+            # Prompt to name a power to freeze
+            # All activatable powers except freeze itself are valid choices
+            freezable_powers = sorted(ACTIVATABLE_POWERS - {"freeze"})
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_power_to_freeze",
+                    "player_id": player.player_id,
+                    "power_name": "freeze",
+                    "options": freezable_powers,
+                    "message": "Name a power to freeze until the end of your next turn.",
+                }
+            ]
+
+        elif power_name == "process":
+            # Process: draw 3 from deck, then prompt to place 2 under draw deck
+            # First, draw 3 cards
+            cards_drawn = []
+            for _ in range(3):
+                if len(player.draw_deck) > 0:
+                    drawn = player.draw_deck.pop(0)
+                    player.hand.append(drawn)
+                    cards_drawn.append(drawn)
+
+            # Now prompt to choose 2 cards from hand to place under draw deck
+            card_ids = [c.card_id for c in player.hand]
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_cards_from_hand",
+                    "player_id": player.player_id,
+                    "power_name": "process",
+                    "options": card_ids,
+                    "cards_drawn": [c.card_id for c in cards_drawn],
+                    "count": 2,
+                    "message": "Choose 2 cards from your hand to place under your draw deck.",
+                }
+            ]
+
+        elif power_name == "toxin":
+            # Toxin: for each Discard card in opponents' play piles, reveal top of their draw deck
+            # Execute the reveal immediately and prompt for choice
+            revealed_cards = []  # list of (player_index, card)
+            for i, p in enumerate(game_state.players):
+                if i == player_index:
+                    continue
+                # Count Discard cards in this opponent's play pile
+                discard_count = sum(
+                    1 for c in p.play_pile if c.power_text.lower().strip() == "discard"
+                )
+                # Reveal that many cards from top of their draw deck
+                for _ in range(discard_count):
+                    if len(p.draw_deck) > 0:
+                        revealed = p.draw_deck.pop(0)
+                        revealed_cards.append((i, revealed))
+
+            if not revealed_cards:
+                # No cards revealed — Toxin has no effect
+                return [
+                    {
+                        "type": "power_activated",
+                        "power_name": "toxin",
+                        "player_id": player.player_id,
+                        "effect": "no_discard_cards_found",
+                        "revealed_cards": [],
+                    }
+                ]
+
+            # Store revealed cards in pending power options for later resolution
+            game_state.pending_power.phase = "choose_target"
+            # Store revealed cards as extra state on pending power
+            game_state.pending_power.toxin_revealed = revealed_cards
+
+            revealed_info = [
+                {"owner_index": idx, "card_id": card.card_id, "denomination": card.denomination}
+                for idx, card in revealed_cards
+            ]
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_revealed_card",
+                    "player_id": player.player_id,
+                    "power_name": "toxin",
+                    "revealed_cards": revealed_info,
+                    "message": "Choose one revealed card to score its denomination.",
+                }
+            ]
+
         return []
 
     def _handle_target_choice(
@@ -546,6 +712,11 @@ class PowerResolver:
         """
         pending = game_state.pending_power
         power_name = pending.power_name
+
+        # For toxin, we need to access pending power data during execution
+        # so don't clear it yet — let the execute method handle it
+        if power_name == "toxin":
+            return self._execute_toxin(game_state, player_index, choice)
 
         # Clear pending power before executing
         game_state.pending_power = None
@@ -572,6 +743,14 @@ class PowerResolver:
             return self._execute_replay(game_state, player_index, choice)
         elif power_name == "score":
             return self._execute_score(game_state, player_index, choice)
+        elif power_name == "battle":
+            return self._execute_battle(game_state, player_index, choice)
+        elif power_name == "freeze":
+            return self._execute_freeze(game_state, player_index, choice)
+        elif power_name == "process":
+            return self._execute_process(game_state, player_index, choice)
+        elif power_name == "toxin":
+            return self._execute_toxin(game_state, player_index, choice)
 
         return ("unknown_power", f"Unknown power for target choice: {power_name}")
 
@@ -1226,5 +1405,393 @@ class PowerResolver:
                 "power_name": "score",
                 "player_id": player.player_id,
                 "target_player_id": target.player_id,
+            }
+        ]
+
+    # --- Expansion 4: No Tribble at All powers ---
+
+    def _execute_battle(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Battle power: reveal top 3 of both players' draw decks.
+
+        Higher total denomination wins all 6 cards under their play pile.
+        Loser discards their 3 revealed cards.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Battle.
+            choice: Dict with "target_player_index" specifying the opponent.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 12.4
+        """
+        target_index = choice.get("target_player_index")
+
+        if target_index is None:
+            return (
+                "missing_target",
+                "Battle power requires a target_player_index choice.",
+            )
+
+        if target_index == player_index:
+            return ("invalid_target", "Cannot battle yourself.")
+
+        if target_index < 0 or target_index >= len(game_state.players):
+            return ("invalid_target", "Target player index out of range.")
+
+        player = game_state.players[player_index]
+        target = game_state.players[target_index]
+
+        if len(player.draw_deck) < 3:
+            return (
+                "insufficient_cards",
+                "You need at least 3 cards in your draw deck to battle.",
+            )
+
+        if len(target.draw_deck) < 3:
+            return (
+                "invalid_target",
+                "Target needs at least 3 cards in their draw deck to battle.",
+            )
+
+        # Reveal top 3 of each player's draw deck
+        player_revealed = [player.draw_deck.pop(0) for _ in range(3)]
+        target_revealed = [target.draw_deck.pop(0) for _ in range(3)]
+
+        player_total = sum(c.denomination for c in player_revealed)
+        target_total = sum(c.denomination for c in target_revealed)
+
+        all_six = player_revealed + target_revealed
+
+        if player_total >= target_total:
+            # Active player wins (ties go to active player)
+            # Winner places all 6 under their play pile
+            player.play_pile = all_six + player.play_pile
+            # Loser discards their 3
+            target.discard_pile.extend(target_revealed)
+            winner_id = player.player_id
+            loser_id = target.player_id
+        else:
+            # Target wins
+            target.play_pile = all_six + target.play_pile
+            # Loser (active player) discards their 3
+            player.discard_pile.extend(player_revealed)
+            winner_id = target.player_id
+            loser_id = player.player_id
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "battle",
+                "player_id": player.player_id,
+                "target_player_id": target.player_id,
+                "player_revealed": [c.card_id for c in player_revealed],
+                "target_revealed": [c.card_id for c in target_revealed],
+                "player_total": player_total,
+                "target_total": target_total,
+                "winner_player_id": winner_id,
+                "loser_player_id": loser_id,
+            }
+        ]
+
+    def _execute_evolve(
+        self, game_state: GameState, player_index: int
+    ) -> List[dict]:
+        """Execute the Evolve power: count hand, move hand to discard, draw same count.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Evolve.
+
+        Returns:
+            List of game events.
+
+        Requirements: 12.5
+        """
+        player = game_state.players[player_index]
+
+        hand_count = len(player.hand)
+
+        # Move all hand cards to discard pile
+        player.discard_pile.extend(player.hand)
+        player.hand.clear()
+
+        # Draw same count from deck
+        cards_drawn = []
+        for _ in range(hand_count):
+            if len(player.draw_deck) > 0:
+                drawn = player.draw_deck.pop(0)
+                player.hand.append(drawn)
+                cards_drawn.append(drawn)
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "evolve",
+                "player_id": player.player_id,
+                "cards_discarded": hand_count,
+                "cards_drawn": len(cards_drawn),
+            }
+        ]
+
+    def _execute_freeze(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Freeze power: record named power as frozen.
+
+        The named power is frozen until the end of the active player's next turn.
+        Any attempt to play a card with that power during the freeze period is rejected.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Freeze.
+            choice: Dict with "power_name" specifying which power to freeze.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 12.6
+        """
+        frozen_power = choice.get("power_name")
+
+        if frozen_power is None:
+            return (
+                "missing_power_name",
+                "Freeze power requires a power_name choice.",
+            )
+
+        frozen_power = frozen_power.lower().strip()
+
+        if frozen_power not in ACTIVATABLE_POWERS or frozen_power == "freeze":
+            return (
+                "invalid_power_name",
+                f"Cannot freeze power: {frozen_power}.",
+            )
+
+        # Record the frozen power — expires at end of active player's next turn
+        # We track this as the player_index who froze it (to know when their next turn ends)
+        game_state.frozen_powers[frozen_power] = player_index
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "freeze",
+                "player_id": game_state.players[player_index].player_id,
+                "frozen_power": frozen_power,
+            }
+        ]
+
+    def is_power_frozen(self, game_state: GameState, power_name: str) -> bool:
+        """Check if a power is currently frozen.
+
+        Args:
+            game_state: The current game state.
+            power_name: The power to check.
+
+        Returns:
+            True if the power is frozen and cannot be played.
+
+        Requirements: 12.6
+        """
+        return power_name.lower().strip() in game_state.frozen_powers
+
+    def clear_expired_freezes(self, game_state: GameState, player_index: int) -> List[dict]:
+        """Clear frozen powers that have expired (end of freezing player's next turn).
+
+        Should be called at the end of each player's turn.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player whose turn just ended.
+
+        Returns:
+            List of events for any cleared freezes.
+
+        Requirements: 12.6
+        """
+        events = []
+        expired = []
+        for power_name, freezer_index in game_state.frozen_powers.items():
+            if freezer_index == player_index:
+                expired.append(power_name)
+
+        for power_name in expired:
+            del game_state.frozen_powers[power_name]
+            events.append({
+                "type": "freeze_expired",
+                "power_name": power_name,
+            })
+
+        return events
+
+    def _execute_mutate(
+        self, game_state: GameState, player_index: int
+    ) -> List[dict]:
+        """Execute the Mutate power: count play pile, shuffle into deck, move same count back.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Mutate.
+
+        Returns:
+            List of game events.
+
+        Requirements: 12.7
+        """
+        player = game_state.players[player_index]
+
+        pile_count = len(player.play_pile)
+
+        # Shuffle play pile into draw deck
+        player.draw_deck.extend(player.play_pile)
+        player.play_pile.clear()
+        random.shuffle(player.draw_deck)
+
+        # Move same count from top of deck to play pile
+        cards_moved = []
+        for _ in range(pile_count):
+            if len(player.draw_deck) > 0:
+                card = player.draw_deck.pop(0)
+                player.play_pile.append(card)
+                cards_moved.append(card)
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "mutate",
+                "player_id": player.player_id,
+                "pile_count": pile_count,
+                "cards_moved": len(cards_moved),
+            }
+        ]
+
+    def _execute_process(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Process power phase 2: place 2 chosen cards under draw deck.
+
+        The 3 cards were already drawn during the prompt phase.
+        Now the player chooses 2 cards from hand to place under draw deck.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Process.
+            choice: Dict with "card_ids" (list of 2 card IDs to place under deck).
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 12.8
+        """
+        player = game_state.players[player_index]
+        card_ids = choice.get("card_ids")
+
+        if card_ids is None or len(card_ids) != 2:
+            return (
+                "invalid_choice",
+                "Process power requires exactly 2 card_ids to place under draw deck.",
+            )
+
+        # Find and remove the 2 cards from hand
+        cards_to_place = []
+        for cid in card_ids:
+            found = False
+            for i, c in enumerate(player.hand):
+                if c.card_id == cid:
+                    cards_to_place.append(player.hand.pop(i))
+                    found = True
+                    break
+            if not found:
+                return (
+                    "card_not_in_hand",
+                    f"Card {cid} is not in your hand.",
+                )
+
+        # Place the 2 cards under the draw deck
+        player.draw_deck.extend(cards_to_place)
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "process",
+                "player_id": player.player_id,
+                "cards_placed_under_deck": [c.card_id for c in cards_to_place],
+            }
+        ]
+
+    def _execute_toxin(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Toxin power phase 2: choose one revealed card to score.
+
+        All revealed cards go to their owners' hands.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Toxin.
+            choice: Dict with "card_id" specifying which revealed card to score.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 12.13
+        """
+        player = game_state.players[player_index]
+        chosen_card_id = choice.get("card_id")
+
+        if chosen_card_id is None:
+            return (
+                "missing_card_id",
+                "Toxin power requires a card_id choice.",
+            )
+
+        # Get the revealed cards from pending power state
+        pending = game_state.pending_power
+        if pending is None:
+            # If pending was already cleared, check for toxin_revealed attribute
+            return ("no_pending_power", "No pending Toxin resolution.")
+
+        revealed_cards = getattr(pending, "toxin_revealed", None)
+        if revealed_cards is None:
+            return ("no_revealed_cards", "No revealed cards for Toxin resolution.")
+
+        # Clear pending power
+        game_state.pending_power = None
+
+        # Find the chosen card among revealed
+        chosen_card = None
+        chosen_owner_index = None
+        for owner_idx, card in revealed_cards:
+            if card.card_id == chosen_card_id:
+                chosen_card = card
+                chosen_owner_index = owner_idx
+                break
+
+        if chosen_card is None:
+            return (
+                "invalid_card_id",
+                f"Card {chosen_card_id} is not among the revealed cards.",
+            )
+
+        # Score the chosen card's denomination for the active player
+        self._score_service.apply_immediate_score(
+            game_state, player.player_id, chosen_card.denomination
+        )
+
+        # All revealed cards go to their owners' hands
+        for owner_idx, card in revealed_cards:
+            game_state.players[owner_idx].hand.append(card)
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "toxin",
+                "player_id": player.player_id,
+                "scored_card_id": chosen_card.card_id,
+                "scored_denomination": chosen_card.denomination,
+                "revealed_count": len(revealed_cards),
             }
         ]

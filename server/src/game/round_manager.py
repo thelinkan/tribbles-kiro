@@ -157,22 +157,44 @@ class RoundManager:
     ) -> None:
         """Move hands of players who did not go out to their discard piles.
 
+        If a player has the Safety card in their play pile, their hand is
+        shuffled into their draw deck instead of being placed in the discard pile.
+
         Args:
             game_state: The current game state (modified in place).
             events: Events list to append to.
 
-        Requirements: 8.3
+        Requirements: 8.3, 12.11
         """
         for player in game_state.players:
             if not player.has_gone_out and len(player.hand) > 0:
                 cards_moved = len(player.hand)
-                player.discard_pile.extend(player.hand)
-                player.hand.clear()
-                events.append({
-                    "type": "hand_moved_to_discard",
-                    "player_id": player.player_id,
-                    "cards_moved": cards_moved,
-                })
+
+                # Check for Safety power in play pile (Requirement 12.11)
+                has_safety = any(
+                    c.power_text.lower().strip() == "safety"
+                    for c in player.play_pile
+                )
+
+                if has_safety:
+                    # Shuffle hand into draw deck instead of discard
+                    player.draw_deck.extend(player.hand)
+                    player.hand.clear()
+                    random.shuffle(player.draw_deck)
+                    events.append({
+                        "type": "hand_shuffled_into_draw_deck",
+                        "player_id": player.player_id,
+                        "cards_moved": cards_moved,
+                        "reason": "safety_power",
+                    })
+                else:
+                    player.discard_pile.extend(player.hand)
+                    player.hand.clear()
+                    events.append({
+                        "type": "hand_moved_to_discard",
+                        "player_id": player.player_id,
+                        "cards_moved": cards_moved,
+                    })
 
     def _handle_decked_player_transitions(
         self, game_state: GameState, events: List[dict]

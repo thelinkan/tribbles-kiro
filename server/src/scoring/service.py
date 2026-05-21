@@ -6,7 +6,7 @@ round scores and applying immediate score changes during gameplay.
 
 from typing import Dict
 
-from models import GameState, PlayerState
+from models import CardInstance, GameState, PlayerState
 
 
 class ScoreService:
@@ -25,6 +25,9 @@ class ScoreService:
         For each player with has_gone_out=True, sums the denominations of all
         cards in their play pile. Players who did not go out receive a score of 0.
 
+        The Quadruple card (denomination 10000) is worth 40000 instead of 10000
+        for the round winner.
+
         Args:
             game_state: The current game state at end of round.
 
@@ -32,12 +35,18 @@ class ScoreService:
             A dictionary mapping player_id to their round score.
             Only players who went out will have non-zero scores.
 
-        Requirements: 8.2
+        Requirements: 8.2, 12.9
         """
         scores: Dict[int, int] = {}
         for player in game_state.players:
             if player.has_gone_out:
-                round_score = sum(card.denomination for card in player.play_pile)
+                round_score = 0
+                for card in player.play_pile:
+                    if card.power_text.lower().strip() == "quadruple":
+                        # Quadruple card worth 40000 instead of 10000
+                        round_score += 40000
+                    else:
+                        round_score += card.denomination
                 scores[player.player_id] = round_score
             else:
                 scores[player.player_id] = 0
@@ -88,6 +97,9 @@ class ScoreService:
         Used by powers like Poison and Score that grant points during gameplay
         rather than at end of round.
 
+        Checks for Tally power: if the card being scored has the Tally power,
+        the scorer receives half and the Tally card's owner receives the other half.
+
         Args:
             game_state: The current game state.
             player_id: The player to receive the points.
@@ -101,3 +113,49 @@ class ScoreService:
                 player.cumulative_score += points
                 return
         raise ValueError(f"Player {player_id} not found in game state.")
+
+    def apply_tally_score(
+        self, game_state: GameState, scorer_player_id: int, card: "CardInstance", points: int
+    ) -> Dict[int, int]:
+        """Apply scoring with Tally power check.
+
+        If the card being scored has the Tally power, the scorer receives half
+        the denomination and the Tally card's owner receives the other half.
+
+        Args:
+            game_state: The current game state.
+            scorer_player_id: The player who is scoring.
+            card: The card being scored from.
+            points: The base points to award.
+
+        Returns:
+            Dict mapping player_id to points actually awarded.
+
+        Requirements: 12.12
+        """
+        # Check if the card has Tally power
+        if card.power_text.lower().strip() == "tally":
+            # Find the Tally card's owner (the player whose play pile contains it)
+            tally_owner_id = None
+            for player in game_state.players:
+                for pile_card in player.play_pile:
+                    if pile_card.card_id == card.card_id:
+                        tally_owner_id = player.player_id
+                        break
+                if tally_owner_id is not None:
+                    break
+
+            if tally_owner_id is not None and tally_owner_id != scorer_player_id:
+                # Split: half to scorer, half to Tally owner
+                half = points // 2
+                scorer_points = half
+                owner_points = half
+
+                self.apply_immediate_score(game_state, scorer_player_id, scorer_points)
+                self.apply_immediate_score(game_state, tally_owner_id, owner_points)
+
+                return {scorer_player_id: scorer_points, tally_owner_id: owner_points}
+
+        # Normal scoring (no Tally or scorer owns the Tally card)
+        self.apply_immediate_score(game_state, scorer_player_id, points)
+        return {scorer_player_id: points}

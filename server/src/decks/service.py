@@ -108,6 +108,56 @@ class DeckService:
                 await conn.commit()
                 return deck_id
 
+    async def update_deck(self, player_id: int, deck_id: int, deck_data: dict) -> bool:
+        """Update an existing deck owned by the player.
+
+        Replaces the deck's metadata and card entries entirely.
+
+        Args:
+            player_id: The ID of the player who owns this deck.
+            deck_id: The ID of the deck to update.
+            deck_data: Dictionary with deck_name, is_public, comment_text, cards.
+
+        Returns:
+            True if the deck was updated, False if not found or not owned.
+        """
+        deck_name = deck_data["deck_name"]
+        is_public = deck_data.get("is_public", False)
+        comment_text = deck_data.get("comment_text", None)
+        cards = deck_data.get("cards", {})
+
+        async with self._pool.acquire() as conn:
+            async with conn.cursor() as cur:
+                # Verify ownership
+                await cur.execute(
+                    "SELECT owner_player_id FROM decks WHERE deck_id = %s",
+                    (deck_id,),
+                )
+                row = await cur.fetchone()
+                if row is None or row[0] != player_id:
+                    return False
+
+                # Update deck metadata
+                await cur.execute(
+                    "UPDATE decks SET deck_name = %s, is_public = %s, comment_text = %s "
+                    "WHERE deck_id = %s",
+                    (deck_name, is_public, comment_text, deck_id),
+                )
+
+                # Delete old card entries and insert new ones
+                await cur.execute(
+                    "DELETE FROM deck_cards WHERE deck_id = %s", (deck_id,)
+                )
+                for card_id, quantity in cards.items():
+                    await cur.execute(
+                        "INSERT INTO deck_cards (deck_id, card_id, quantity) "
+                        "VALUES (%s, %s, %s)",
+                        (deck_id, int(card_id), quantity),
+                    )
+
+                await conn.commit()
+                return True
+
     async def load_deck(
         self, player_id: int, deck_id: int
     ) -> Tuple[Optional[Deck], Optional[DeckError]]:

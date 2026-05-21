@@ -415,8 +415,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - On error: display localised error message, do not clear username field
     - _Requirements: 1.7, 1.8, 1.9, 1.10_
 
-- [ ] 23. Implement Client — Deck Builder
-  - [ ] 23.1 Implement DeckBuilder screen
+- [x] 23. Implement Client — Deck Builder
+  - [x] 23.1 Implement DeckBuilder screen
     - Create `client/scripts/DeckBuilder.gd`
     - Card search panel: filter by denomination, power, expansion, name substring
     - Deck editing panel: list of cards with quantities, add/remove buttons

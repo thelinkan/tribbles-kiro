@@ -1,4 +1,6 @@
-[gd_scene format=3 uid="uid://deck_builder"]
+[gd_scene load_steps=2 format=3 uid="uid://deck_builder"]
+
+[ext_resource type="Script" path="res://scripts/DeckBuilder.gd" id="1_script"]
 
 [node name="DeckBuilder" type="Control"]
 layout_mode = 3
@@ -7,19 +9,191 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_script")
 
-[node name="Label" type="Label" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -60.0
-offset_top = -12.0
-offset_right = 60.0
-offset_bottom = 12.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
 text = "Deck Builder"
 horizontal_alignment = 1
+
+[node name="HSplitContainer" type="HSplitContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SearchPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
+
+[node name="SearchMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="SearchVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SearchTitle" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox"]
+layout_mode = 2
+text = "Search Cards"
+horizontal_alignment = 1
+
+[node name="DenominationLabel" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox"]
+layout_mode = 2
+text = "Denomination"
+
+[node name="DenominationFilter" type="OptionButton" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PowerLabel" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox"]
+layout_mode = 2
+text = "Power"
+
+[node name="PowerFilter" type="LineEdit" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Power name..."
+
+[node name="ExpansionLabel" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox"]
+layout_mode = 2
+text = "Expansion"
+
+[node name="ExpansionFilter" type="OptionButton" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox"]
+layout_mode = 2
+text = "Card Name"
+
+[node name="NameFilter" type="LineEdit" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Card name..."
+
+[node name="SearchButton" type="Button" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Search"
+
+[node name="SearchResultsScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SearchResultsList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/SearchPanel/SearchMargin/SearchVBox/SearchResultsScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DeckPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
+
+[node name="DeckMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="DeckVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DeckNameLabel" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox"]
+layout_mode = 2
+text = "Deck Name"
+
+[node name="DeckNameField" type="LineEdit" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "My Deck"
+
+[node name="PublicToggle" type="CheckButton" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Public"
+
+[node name="CommentLabel" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox"]
+layout_mode = 2
+text = "Comment"
+
+[node name="CommentField" type="TextEdit" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 60)
+placeholder_text = "Deck notes..."
+
+[node name="CardCountLabel" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Card Count: 0"
+horizontal_alignment = 1
+
+[node name="MinimumWarning" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+modulate = Color(1, 0.6, 0.2, 1)
+text = "Deck needs at least 35 cards for game use"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="DeckCardsScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DeckCardsList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox/DeckCardsScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ButtonsHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SaveButton" type="Button" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox/ButtonsHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Save"
+
+[node name="LoadButton" type="Button" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox/ButtonsHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Load"
+
+[node name="CopyButton" type="Button" parent="MarginContainer/VBoxContainer/HSplitContainer/DeckPanel/DeckMargin/DeckVBox/ButtonsHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Copy"
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Back"
+

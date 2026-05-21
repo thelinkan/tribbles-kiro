@@ -324,8 +324,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Validates: Requirements 4.7, 4.8**
 
 
-- [ ] 18. Implement Disconnection, Reconnection, and Spectating
-  - [ ] 18.1 Implement player disconnection and AI_Substitute logic
+- [x] 18. Implement Disconnection, Reconnection, and Spectating
+  - [x] 18.1 Implement player disconnection and AI_Substitute logic
     - Create `server/src/game/disconnection.py` with disconnection tracking
     - Detect WebSocket disconnection, mark player as disconnected with timestamp
     - During grace period: skip disconnected player's turn without decking
@@ -333,14 +333,14 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Support configurable timeout per session (default 30 seconds)
     - _Requirements: 21.1, 21.2, 21.3, 21.4, 21.5_
 
-  - [ ] 18.2 Implement player reconnection and state sync
+  - [x] 18.2 Implement player reconnection and state sync
     - On reconnect with valid session token: remove AI_Substitute, restore player control
     - Send `reconnect_state_sync` message with full game state (hand, piles, scores, sequence, direction, active player)
     - Broadcast `reconnect_notify` to all other players
     - Handle game ending while disconnected: record final score, allow viewing results on reconnect
     - _Requirements: 21.6, 21.7, 21.8_
 
-  - [ ]* 18.3 Write property tests for disconnection/reconnection
+  - [x]* 18.3 Write property tests for disconnection/reconnection
     - **Property 66: Disconnection marks player and starts grace period**
     - **Property 67: Disconnected player's turn is skipped without decking**
     - **Property 68: AI_Substitute activation preserves player state**
@@ -348,7 +348,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Property 70: Game ending with disconnected player records score in results**
     - **Validates: Requirements 21.1, 21.3, 21.4, 21.5, 21.6, 21.7, 21.8**
 
-  - [ ] 18.4 Implement spectator state broadcasting
+  - [x] 18.4 Implement spectator state broadcasting
     - Implement `get_spectator_visible_state(game_id)` — return all public state without hand contents
     - Send `spectator_state_update` to all spectators on game state changes
     - Send `spectator_count_update` to all players and spectators when spectator count changes
@@ -356,13 +356,13 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Reject any game actions from spectator player IDs
     - _Requirements: 22.1, 22.2, 22.3, 22.5, 22.6, 22.7_
 
-  - [ ]* 18.5 Write property tests for spectating
+  - [x]* 18.5 Write property tests for spectating
     - **Property 72: Spectator receives only public state**
     - **Property 73: Spectator cannot perform game actions**
     - **Property 74: Spectator leaving does not affect game state**
     - **Validates: Requirements 22.2, 22.3, 22.5, 22.7**
 
-- [ ] 19. Checkpoint — Server logic complete
+- [x] 19. Checkpoint — Server logic complete
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 20. Implement Hypothesis test generators

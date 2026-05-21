@@ -231,6 +231,7 @@ class GameEngine:
         """Process a player action within a game.
 
         Handles play_card, draw_card, and accept_draw actions.
+        Rejects any actions from spectator player IDs.
 
         Args:
             game_id: The game session ID.
@@ -244,12 +245,16 @@ class GameEngine:
             On success: A list of game event dicts describing what happened.
             On error: A tuple of (error_code, error_message).
 
-        Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9
+        Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 22.7
         """
         # Validate game exists
         state = self._games.get(game_id)
         if state is None:
             return ("game_not_found", f"Game '{game_id}' not found.")
+
+        # Reject actions from spectators (Requirement 22.7)
+        if player_id in state.spectators:
+            return ("spectator_cannot_act", "Spectators cannot perform game actions.")
 
         # Validate game is active
         if state.game_status != "active":

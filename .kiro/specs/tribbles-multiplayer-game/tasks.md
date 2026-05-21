@@ -208,13 +208,13 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Property 34: Reverse power toggles direction (idempotent pair)**
     - **Validates: Requirements 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8**
 
-- [ ] 11. Implement Card Powers — The Trouble with Tribbles Expansion
-  - [ ] 11.1 Implement Bonus power scoring
+- [x] 11. Implement Card Powers — The Trouble with Tribbles Expansion
+  - [x] 11.1 Implement Bonus power scoring
     - In `Score_Service`, check for Bonus cards at denominations 1, 10, 100, 1000 in play pile of non-decked players
     - Award 100000 bonus points when all four are present
     - _Requirements: 10.1_
 
-  - [ ]* 11.2 Write property test for Bonus scoring
+  - [x]* 11.2 Write property test for Bonus scoring
     - **Property 35: Bonus scoring condition**
     - **Validates: Requirements 10.1**
 

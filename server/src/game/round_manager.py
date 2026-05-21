@@ -80,6 +80,18 @@ class RoundManager:
             "scores": round_scores,
         })
 
+        # Step 1b: Calculate and apply bonus scores (Requirement 10.1)
+        bonus_scores = self._score_service.calculate_bonus_scores(game_state)
+        for player in game_state.players:
+            bonus = bonus_scores.get(player.player_id, 0)
+            if bonus > 0:
+                player.cumulative_score += bonus
+                events.append({
+                    "type": "bonus_scored",
+                    "player_id": player.player_id,
+                    "bonus_points": bonus,
+                })
+
         # Step 2: Move non-goers' hands to discard piles
         self._move_non_goers_hands_to_discard(game_state, events)
 

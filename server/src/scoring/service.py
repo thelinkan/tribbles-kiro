@@ -43,6 +43,43 @@ class ScoreService:
                 scores[player.player_id] = 0
         return scores
 
+    BONUS_DENOMINATIONS = {1, 10, 100, 1000}
+    BONUS_POINTS = 100000
+
+    def calculate_bonus_scores(self, game_state: GameState) -> Dict[int, int]:
+        """Calculate bonus scores for players with all four Bonus denomination cards.
+
+        For each non-decked player, checks if their play pile contains Bonus cards
+        at denominations 1, 10, 100, and 1000. If all four are present, awards
+        100000 bonus points.
+
+        Args:
+            game_state: The current game state at end of round.
+
+        Returns:
+            A dictionary mapping player_id to their bonus score (100000 or 0).
+
+        Requirements: 10.1
+        """
+        bonus_scores: Dict[int, int] = {}
+        for player in game_state.players:
+            if player.is_decked:
+                bonus_scores[player.player_id] = 0
+                continue
+
+            # Find Bonus cards in the play pile and collect their denominations
+            bonus_denominations_found: set = set()
+            for card in player.play_pile:
+                if card.power_text.lower() == "bonus" and card.denomination in self.BONUS_DENOMINATIONS:
+                    bonus_denominations_found.add(card.denomination)
+
+            if bonus_denominations_found >= self.BONUS_DENOMINATIONS:
+                bonus_scores[player.player_id] = self.BONUS_POINTS
+            else:
+                bonus_scores[player.player_id] = 0
+
+        return bonus_scores
+
     def apply_immediate_score(
         self, game_state: GameState, player_id: int, points: int
     ) -> None:

@@ -406,8 +406,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Persist language preference to user settings file
     - _Requirements: 17.1, 17.2, 17.3_
 
-- [ ] 22. Implement Client — Login and Registration screens
-  - [ ] 22.1 Implement LoginScreen and registration flow
+- [x] 22. Implement Client — Login and Registration screens
+  - [x] 22.1 Implement LoginScreen and registration flow
     - Create `client/scripts/LoginScreen.gd`
     - UI elements: server address field, username field, password field, login button, register toggle/link
     - Registration mode: additional email field, register button

@@ -1,4 +1,6 @@
-[gd_scene format=3 uid="uid://login_screen"]
+[gd_scene load_steps=2 format=3 uid="uid://login_screen"]
+
+[ext_resource type="Script" path="res://scripts/LoginScreen.gd" id="1_script"]
 
 [node name="LoginScreen" type="Control"]
 layout_mode = 3
@@ -7,19 +9,87 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_script")
 
-[node name="Label" type="Label" parent="."]
+[node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -60.0
-offset_top = -12.0
-offset_right = 60.0
-offset_bottom = 12.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "Login Screen"
+
+[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(400, 0)
+
+[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Login"
 horizontal_alignment = 1
+
+[node name="ServerAddressLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Server Address"
+
+[node name="ServerAddressField" type="LineEdit" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "ws://192.168.1.100:8080"
+
+[node name="UsernameLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Username"
+
+[node name="UsernameField" type="LineEdit" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Username"
+
+[node name="PasswordLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Password"
+
+[node name="PasswordField" type="LineEdit" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Password"
+secret = true
+
+[node name="EmailField" type="LineEdit" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+placeholder_text = "Email"
+
+[node name="ActionButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Log In"
+
+[node name="ToggleButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+flat = true
+text = "Create an account"
+
+[node name="ErrorLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+modulate = Color(1, 0.3, 0.3, 1)
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 2

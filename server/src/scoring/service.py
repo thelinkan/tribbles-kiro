@@ -55,6 +55,52 @@ class ScoreService:
     BONUS_DENOMINATIONS = {1, 10, 100, 1000}
     BONUS_POINTS = 100000
 
+    def calculate_idic_scores(self, game_state: GameState) -> Dict[int, int]:
+        """Calculate IDIC bonus scores for players who went out.
+
+        For each player who went out, count unique powers in their play pile.
+        For each IDIC card of a distinct denomination, award 10000 × unique_power_count.
+        Same denomination IDIC cards do NOT stack (only count distinct denominations).
+
+        Compound powers count as distinct powers (e.g., "Clone & Reverse" is one
+        distinct power, different from "Clone" or "Reverse" alone).
+
+        Args:
+            game_state: The current game state at end of round.
+
+        Returns:
+            A dictionary mapping player_id to their IDIC bonus score.
+
+        Requirements: 14.4
+        """
+        idic_scores: Dict[int, int] = {}
+        for player in game_state.players:
+            if not player.has_gone_out:
+                idic_scores[player.player_id] = 0
+                continue
+
+            # Count unique powers in play pile
+            unique_powers: set = set()
+            # Track distinct IDIC denominations
+            idic_denominations: set = set()
+
+            for card in player.play_pile:
+                power = card.power_text.lower().strip()
+                unique_powers.add(power)
+
+                if power == "idic":
+                    idic_denominations.add(card.denomination)
+
+            # Each distinct IDIC denomination awards 10000 × unique_power_count
+            if idic_denominations and unique_powers:
+                idic_score = len(idic_denominations) * 10000 * len(unique_powers)
+            else:
+                idic_score = 0
+
+            idic_scores[player.player_id] = idic_score
+
+        return idic_scores
+
     def calculate_bonus_scores(self, game_state: GameState) -> Dict[int, int]:
         """Calculate bonus scores for players with all four Bonus denomination cards.
 

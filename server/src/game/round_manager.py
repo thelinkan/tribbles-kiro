@@ -92,6 +92,21 @@ class RoundManager:
                     "bonus_points": bonus,
                 })
 
+        # Step 1c: Calculate and apply IDIC scores (Requirement 14.4)
+        idic_scores = self._score_service.calculate_idic_scores(game_state)
+        for player in game_state.players:
+            idic = idic_scores.get(player.player_id, 0)
+            if idic > 0:
+                player.cumulative_score += idic
+                events.append({
+                    "type": "idic_scored",
+                    "player_id": player.player_id,
+                    "idic_points": idic,
+                })
+
+        # Step 1d: Return borrowed cards to original owners (Requirement 14.2)
+        self._return_borrowed_cards(game_state, events)
+
         # Step 2: Move non-goers' hands to discard piles
         self._move_non_goers_hands_to_discard(game_state, events)
 
@@ -249,6 +264,49 @@ class RoundManager:
                     })
 
         return sitting_out
+
+    def _return_borrowed_cards(
+        self, game_state: GameState, events: List[dict]
+    ) -> None:
+        """Return borrowed cards (from Assimilate) to their original owners.
+
+        For each player, any cards in their borrowed_cards list are removed from
+        their play pile and returned to the original owner's discard pile.
+
+        Args:
+            game_state: The current game state (modified in place).
+            events: Events list to append to.
+
+        Requirements: 14.2
+        """
+        for player in game_state.players:
+            if not player.borrowed_cards:
+                continue
+
+            for borrowed_card, original_owner_id in player.borrowed_cards:
+                # Remove from play pile if still there
+                card_found = False
+                for i, c in enumerate(player.play_pile):
+                    if c.card_id == borrowed_card.card_id:
+                        player.play_pile.pop(i)
+                        card_found = True
+                        break
+
+                # Return to original owner's discard pile
+                if card_found:
+                    for owner in game_state.players:
+                        if owner.player_id == original_owner_id:
+                            owner.discard_pile.append(borrowed_card)
+                            events.append({
+                                "type": "borrowed_card_returned",
+                                "borrower_player_id": player.player_id,
+                                "owner_player_id": original_owner_id,
+                                "card_id": borrowed_card.card_id,
+                            })
+                            break
+
+            # Clear borrowed cards list
+            player.borrowed_cards.clear()
 
     def _track_time_warp_reductions(
         self, game_state: GameState, events: List[dict]

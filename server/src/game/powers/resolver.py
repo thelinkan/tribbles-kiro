@@ -25,6 +25,8 @@ ACTIVATABLE_POWERS = {
     "battle", "evolve", "freeze", "mutate", "process", "toxin",
     # Expansion 5: Trials and Tribble-ations
     "avalanche", "famine", "stampede",
+    # Expansion 6: Nothing But Tribble
+    "assimilate", "convert", "masaka", "scan", "utilize",
 }
 
 # Powers that require a target or choice after activation
@@ -36,13 +38,15 @@ POWERS_NEEDING_TARGET = {
     "battle", "freeze", "process", "toxin",
     # Expansion 5
     "avalanche",
+    # Expansion 6
+    "assimilate", "scan", "utilize",
 }
 
 # Powers that execute immediately on activation (no target needed)
-IMMEDIATE_POWERS = {"go", "skip", "reverse", "evolve", "mutate", "famine", "stampede"}
+IMMEDIATE_POWERS = {"go", "skip", "reverse", "evolve", "mutate", "famine", "stampede", "convert", "masaka"}
 
 # Antidote is a passive power — it triggers during Poison resolution, not actively played
-PASSIVE_POWERS = {"antidote", "quadruple", "safety", "tally", "time_warp"}
+PASSIVE_POWERS = {"antidote", "quadruple", "safety", "tally", "time_warp", "advance", "idic"}
 
 
 class PowerResolver:
@@ -312,6 +316,10 @@ class PowerResolver:
             return self._execute_famine(game_state, player_index)
         elif power_name == "stampede":
             return self._execute_stampede(game_state, player_index)
+        elif power_name == "convert":
+            return self._execute_convert(game_state, player_index)
+        elif power_name == "masaka":
+            return self._execute_masaka(game_state, player_index)
         return []
 
     def _execute_go(self, game_state: GameState, player_index: int) -> List[dict]:
@@ -749,6 +757,71 @@ class PowerResolver:
                 }
             ]
 
+        elif power_name == "assimilate":
+            # Prompt to choose an opponent with at least 1 card in draw deck
+            valid_targets = []
+            for i, p in enumerate(game_state.players):
+                if i != player_index and len(p.draw_deck) > 0:
+                    valid_targets.append(i)
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_target_player",
+                    "player_id": player.player_id,
+                    "power_name": "assimilate",
+                    "options": valid_targets,
+                    "message": "Choose an opponent to assimilate the top card of their draw deck.",
+                }
+            ]
+
+        elif power_name == "scan":
+            # Reveal top 3 of own draw deck to self only
+            revealed = []
+            for i in range(min(3, len(player.draw_deck))):
+                revealed.append(player.draw_deck[i])
+
+            if not revealed:
+                return [
+                    {
+                        "type": "power_activated",
+                        "power_name": "scan",
+                        "player_id": player.player_id,
+                        "effect": "no_cards_to_scan",
+                    }
+                ]
+
+            revealed_info = [
+                {"card_id": c.card_id, "card_name": c.card_name, "denomination": c.denomination, "power_text": c.power_text}
+                for c in revealed
+            ]
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "scan_reorder",
+                    "player_id": player.player_id,
+                    "power_name": "scan",
+                    "revealed_cards": revealed_info,
+                    "message": "Reorder these cards and choose to place them on top or bottom of your draw deck.",
+                }
+            ]
+
+        elif power_name == "utilize":
+            # Prompt to choose an opponent with at least 2 cards in hand
+            valid_targets = []
+            for i, p in enumerate(game_state.players):
+                if i != player_index and len(p.hand) >= 2:
+                    valid_targets.append(i)
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_target_player",
+                    "player_id": player.player_id,
+                    "power_name": "utilize",
+                    "options": valid_targets,
+                    "message": "Choose an opponent with at least 2 cards in hand.",
+                }
+            ]
+
         return []
 
     def _handle_target_choice(
@@ -807,6 +880,12 @@ class PowerResolver:
             return self._execute_toxin(game_state, player_index, choice)
         elif power_name == "avalanche":
             return self._execute_avalanche(game_state, player_index, choice)
+        elif power_name == "assimilate":
+            return self._execute_assimilate(game_state, player_index, choice)
+        elif power_name == "scan":
+            return self._execute_scan(game_state, player_index, choice)
+        elif power_name == "utilize":
+            return self._execute_utilize(game_state, player_index, choice)
 
         return ("unknown_power", f"Unknown power for target choice: {power_name}")
 
@@ -2020,3 +2099,313 @@ class PowerResolver:
         })
 
         return events
+
+    # --- Expansion 6: Nothing But Tribble powers ---
+
+    def _execute_convert(
+        self, game_state: GameState, player_index: int
+    ) -> List[dict]:
+        """Execute the Convert power: place Convert card under draw deck, move top of deck to play pile.
+
+        The Convert card (which was just played to the play pile) is moved from
+        the play pile to under the draw deck, then the top of the draw deck is
+        moved to the play pile.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Convert.
+
+        Returns:
+            List of game events.
+
+        Requirements: 14.3
+        """
+        player = game_state.players[player_index]
+
+        # Find the Convert card in the play pile (it's the most recently played card, i.e. last)
+        convert_card = None
+        convert_index = None
+        for i in range(len(player.play_pile) - 1, -1, -1):
+            if player.play_pile[i].power_text.lower().strip() == "convert":
+                convert_card = player.play_pile[i]
+                convert_index = i
+                break
+
+        if convert_card is None:
+            # Shouldn't happen, but handle gracefully
+            return [
+                {
+                    "type": "power_activated",
+                    "power_name": "convert",
+                    "player_id": player.player_id,
+                    "effect": "no_convert_card_found",
+                }
+            ]
+
+        # Move Convert card from play pile to under the draw deck
+        player.play_pile.pop(convert_index)
+        player.draw_deck.append(convert_card)
+
+        # Move top of draw deck to play pile
+        if len(player.draw_deck) > 0:
+            top_card = player.draw_deck.pop(0)
+            player.play_pile.append(top_card)
+            return [
+                {
+                    "type": "power_activated",
+                    "power_name": "convert",
+                    "player_id": player.player_id,
+                    "convert_card_id": convert_card.card_id,
+                    "new_play_pile_card_id": top_card.card_id,
+                    "new_play_pile_card_denomination": top_card.denomination,
+                }
+            ]
+        else:
+            return [
+                {
+                    "type": "power_activated",
+                    "power_name": "convert",
+                    "player_id": player.player_id,
+                    "convert_card_id": convert_card.card_id,
+                    "effect": "no_card_to_draw",
+                }
+            ]
+
+    def _execute_masaka(
+        self, game_state: GameState, player_index: int
+    ) -> List[dict]:
+        """Execute the Masaka power: all players place hands under draw decks, deal 3 to each.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Masaka.
+
+        Returns:
+            List of game events.
+
+        Requirements: 14.5
+        """
+        events = []
+
+        # All players place their hands under their draw decks
+        for player in game_state.players:
+            if player.is_decked:
+                continue
+            if len(player.hand) > 0:
+                player.draw_deck.extend(player.hand)
+                player.hand.clear()
+
+        # Deal 3 cards to each non-decked player
+        for player in game_state.players:
+            if player.is_decked:
+                continue
+            cards_dealt = 0
+            for _ in range(3):
+                if len(player.draw_deck) > 0:
+                    card = player.draw_deck.pop(0)
+                    player.hand.append(card)
+                    cards_dealt += 1
+            events.append({
+                "type": "masaka_cards_dealt",
+                "player_id": player.player_id,
+                "cards_dealt": cards_dealt,
+            })
+
+        events.insert(0, {
+            "type": "power_activated",
+            "power_name": "masaka",
+            "player_id": game_state.players[player_index].player_id,
+            "effect": "hands_reset_and_dealt",
+        })
+
+        return events
+
+    def _execute_assimilate(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Assimilate power: move top of target's draw deck to active player's play pile.
+
+        The card is recorded as borrowed and will be returned at round end.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Assimilate.
+            choice: Dict with "target_player_index" specifying the target.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 14.2
+        """
+        target_index = choice.get("target_player_index")
+
+        if target_index is None:
+            return (
+                "missing_target",
+                "Assimilate power requires a target_player_index choice.",
+            )
+
+        if target_index == player_index:
+            return ("invalid_target", "Cannot target yourself with Assimilate.")
+
+        if target_index < 0 or target_index >= len(game_state.players):
+            return ("invalid_target", "Target player index out of range.")
+
+        target = game_state.players[target_index]
+
+        if len(target.draw_deck) == 0:
+            return (
+                "invalid_target",
+                "Target player has no cards in their draw deck.",
+            )
+
+        player = game_state.players[player_index]
+
+        # Move top of target's draw deck to active player's play pile
+        borrowed_card = target.draw_deck.pop(0)
+        player.play_pile.append(borrowed_card)
+
+        # Record as borrowed (card, original_owner_id)
+        player.borrowed_cards.append((borrowed_card, target.player_id))
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "assimilate",
+                "player_id": player.player_id,
+                "target_player_id": target.player_id,
+                "borrowed_card_id": borrowed_card.card_id,
+                "borrowed_card_denomination": borrowed_card.denomination,
+            }
+        ]
+
+    def _execute_scan(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Scan power phase 2: reorder revealed cards and place on top or bottom.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Scan.
+            choice: Dict with "card_ids" (ordered list of card IDs) and
+                "placement" ("top" or "bottom").
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 14.6
+        """
+        player = game_state.players[player_index]
+        card_ids = choice.get("card_ids")
+        placement = choice.get("placement", "top")
+
+        if card_ids is None:
+            return ("missing_card_ids", "Scan power requires card_ids in the chosen order.")
+
+        # Validate the card_ids match the top cards of the draw deck
+        # The cards were revealed but not removed, so they should still be at the top
+        num_revealed = min(3, len(player.draw_deck))
+        top_cards = player.draw_deck[:num_revealed]
+        top_card_ids = {c.card_id for c in top_cards}
+
+        if set(card_ids) != top_card_ids:
+            return (
+                "invalid_card_ids",
+                "Card IDs do not match the revealed cards.",
+            )
+
+        if len(card_ids) != num_revealed:
+            return (
+                "invalid_card_ids",
+                f"Expected {num_revealed} card IDs, got {len(card_ids)}.",
+            )
+
+        # Remove the top cards from the draw deck
+        removed_cards = player.draw_deck[:num_revealed]
+        player.draw_deck = player.draw_deck[num_revealed:]
+
+        # Reorder according to the provided card_ids order
+        card_map = {c.card_id: c for c in removed_cards}
+        reordered = [card_map[cid] for cid in card_ids]
+
+        # Place on top or bottom
+        if placement == "bottom":
+            player.draw_deck.extend(reordered)
+        else:
+            # Place on top (in order, so first in list is top of deck)
+            player.draw_deck = reordered + player.draw_deck
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "scan",
+                "player_id": player.player_id,
+                "placement": placement,
+                "card_count": len(reordered),
+            }
+        ]
+
+    def _execute_utilize(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Utilize power: opponent randomly places one hand card on their play pile.
+
+        Active player scores that card's denomination.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Utilize.
+            choice: Dict with "target_player_index" specifying the target.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 14.7
+        """
+        target_index = choice.get("target_player_index")
+
+        if target_index is None:
+            return (
+                "missing_target",
+                "Utilize power requires a target_player_index choice.",
+            )
+
+        if target_index == player_index:
+            return ("invalid_target", "Cannot target yourself with Utilize.")
+
+        if target_index < 0 or target_index >= len(game_state.players):
+            return ("invalid_target", "Target player index out of range.")
+
+        target = game_state.players[target_index]
+
+        if len(target.hand) < 2:
+            return (
+                "invalid_target",
+                "Target player must have at least 2 cards in hand.",
+            )
+
+        player = game_state.players[player_index]
+
+        # Randomly select one card from target's hand
+        random_index = random.randint(0, len(target.hand) - 1)
+        utilized_card = target.hand.pop(random_index)
+
+        # Place it on target's play pile
+        target.play_pile.append(utilized_card)
+
+        # Active player scores that card's denomination
+        self._score_service.apply_immediate_score(
+            game_state, player.player_id, utilized_card.denomination
+        )
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "utilize",
+                "player_id": player.player_id,
+                "target_player_id": target.player_id,
+                "utilized_card_id": utilized_card.card_id,
+                "utilized_card_denomination": utilized_card.denomination,
+                "points_scored": utilized_card.denomination,
+            }
+        ]

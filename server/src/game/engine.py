@@ -179,6 +179,7 @@ class GameEngine:
         A card is valid if:
         - Its denomination matches the current sequence, OR
         - The sequence is broken and it's a 1-denomination card, OR
+        - The sequence is broken and it has the Advance power (plays in place of 1), OR
         - It's a Clone card and its denomination matches the last_played_denomination.
 
         Args:
@@ -196,6 +197,10 @@ class GameEngine:
         if state.sequence_broken and card.denomination == 1:
             return True
 
+        # Sequence break: allow Advance power card (plays in place of 1-denomination)
+        if state.sequence_broken and self._is_advance_card(card):
+            return True
+
         # Clone: denomination matches last_played_denomination
         if (
             self._is_clone_card(card)
@@ -205,6 +210,20 @@ class GameEngine:
             return True
 
         return False
+
+    def _is_advance_card(self, card: CardInstance) -> bool:
+        """Check if a card has the Advance power.
+
+        Args:
+            card: The card to check.
+
+        Returns:
+            True if the card has Advance as its power or as part of a compound power.
+
+        Requirements: 14.1
+        """
+        power = card.power_text.lower()
+        return "advance" in power
 
     def process_action(
         self, game_id: str, player_id: int, action: dict
@@ -324,8 +343,8 @@ class GameEngine:
         state.last_played_denomination = card.denomination
 
         # Determine new sequence
-        # If a 1-denomination card was played after a sequence break, reset sequence to 10
-        if state.sequence_broken and card.denomination == 1:
+        # If a 1-denomination card or Advance card was played after a sequence break, reset sequence to 10
+        if state.sequence_broken and (card.denomination == 1 or self._is_advance_card(card)):
             state.current_sequence = 10
         else:
             state.current_sequence = self._advance_sequence(card.denomination)

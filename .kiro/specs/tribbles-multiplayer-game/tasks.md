@@ -286,8 +286,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Property 57: Time Warp reduces next round hand size**
     - **Validates: Requirements 13.1, 13.2, 13.3, 13.4**
 
-- [ ] 15. Implement Card Powers — Nothing But Tribble Expansion
-  - [ ] 15.1 Implement expansion 6 powers
+- [x] 15. Implement Card Powers — Nothing But Tribble Expansion
+  - [x] 15.1 Implement expansion 6 powers
     - Implement Advance power: playable in place of 1-denomination card after sequence break
     - Implement Assimilate power: move top of target's draw deck to active player's play pile as borrowed; return at round end
     - Implement Convert power: place Convert card under draw deck, move top of draw deck to play pile
@@ -297,7 +297,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Implement Utilize power: chosen opponent (≥ 2 cards in hand) randomly places one hand card on their play pile; active player scores that card's denomination
     - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7_
 
-  - [ ]* 15.2 Write property tests for expansion 6 powers
+  - [x]* 15.2 Write property tests for expansion 6 powers
     - **Property 58: Advance playable after sequence break**
     - **Property 59: Assimilate borrows and returns**
     - **Property 60: Convert transforms card placement**

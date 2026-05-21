@@ -76,3 +76,7 @@ UI_ERROR_DECK_TOO_SMALL,Deck does not meet minimum card count,Kortleken uppfylle
 UI_POWER_CHOOSE_TARGET,Choose a target player,Välj en målspelare
 UI_POWER_CHOOSE_CARD,Choose a card,Välj ett kort
 UI_POWER_CHOOSE_POWER,Choose a power to freeze,Välj en kraft att frysa
+UI_CONTINUE,Continue,Fortsätt
+UI_RETURN_TO_LOBBY,Return to Lobby,Tillbaka till lobby
+UI_RANK,#,#
+UI_PLAYER,Player,Spelare

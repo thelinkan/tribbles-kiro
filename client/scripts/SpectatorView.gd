@@ -87,8 +87,9 @@ func _on_spectator_count_update(payload: Dictionary) -> void:
 	_update_spectator_count_display()
 
 
-## Handle game_end: navigate to end-of-game screen.
-func _on_game_end(_payload: Dictionary) -> void:
+## Handle game_end: store payload and navigate to end-of-game screen.
+func _on_game_end(payload: Dictionary) -> void:
+	NetworkClient.game_end_data = payload
 	get_tree().change_scene_to_file("res://scenes/EndOfGameScreen.tscn")
 
 

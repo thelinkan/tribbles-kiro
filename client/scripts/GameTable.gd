@@ -587,13 +587,15 @@ func _check_ai_substitutes() -> void:
 
 # ─── Round End / Game End (Task 25.3) ──────────────────────────────────────────
 
-## Handle round_end: navigate to end-of-round screen.
-func _on_round_end(_payload: Dictionary) -> void:
+## Handle round_end: store payload and navigate to end-of-round screen.
+func _on_round_end(payload: Dictionary) -> void:
+	NetworkClient.round_end_data = payload
 	get_tree().change_scene_to_file("res://scenes/EndOfRoundScreen.tscn")
 
 
-## Handle game_end: navigate to end-of-game screen.
-func _on_game_end(_payload: Dictionary) -> void:
+## Handle game_end: store payload and navigate to end-of-game screen.
+func _on_game_end(payload: Dictionary) -> void:
+	NetworkClient.game_end_data = payload
 	get_tree().change_scene_to_file("res://scenes/EndOfGameScreen.tscn")
 
 

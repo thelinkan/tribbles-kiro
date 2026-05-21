@@ -76,6 +76,10 @@ var _reconnect_delay: float = INITIAL_RECONNECT_DELAY
 var _reconnect_timer: Timer = null
 ## Whether the user intentionally disconnected (suppress reconnection).
 var _intentional_disconnect: bool = false
+## Temporary storage for round_end payload (read by EndOfRoundScreen on _ready).
+var round_end_data: Dictionary = {}
+## Temporary storage for game_end payload (read by EndOfGameScreen on _ready).
+var game_end_data: Dictionary = {}
 
 
 # ─── Lifecycle ──────────────────────────────────────────────────────────────────
@@ -246,8 +250,10 @@ func _handle_message(text: String) -> void:
 		"prompt":
 			prompt_received.emit(payload)
 		"round_end":
+			round_end_data = payload
 			round_end.emit(payload)
 		"game_end":
+			game_end_data = payload
 			game_end.emit(payload)
 		"error":
 			error_received.emit(payload)

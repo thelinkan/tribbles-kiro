@@ -474,8 +474,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Leave button to exit spectating
     - _Requirements: 22.4_
 
-- [ ] 26. Implement Client — End of Round and End of Game screens
-  - [ ] 26.1 Implement EndOfRoundScreen and EndOfGameScreen
+- [x] 26. Implement Client — End of Round and End of Game screens
+  - [x] 26.1 Implement EndOfRoundScreen and EndOfGameScreen
     - Create `client/scripts/EndOfRoundScreen.gd` — popup showing each player's round score and cumulative score
     - Create `client/scripts/EndOfGameScreen.gd` — final rankings (highest to lowest), clearly indicate winner
     - Handle `round_end` message: display EndOfRoundScreen

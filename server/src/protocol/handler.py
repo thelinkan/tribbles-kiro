@@ -433,12 +433,12 @@ class MessageHandler:
             return error_message("invalid_payload", "Missing deck_id or player_count.")
 
         session_id, lobby_error = await self._lobby_service.create_game(
-            player_id, deck_id, player_count
+            player_id, int(float(str(deck_id))), int(float(str(player_count)))
         )
         if lobby_error is not None:
             return error_message(lobby_error.code, lobby_error.message)
 
-        return encode_message("create_game_success", {"session_id": session_id})
+        return encode_message("lobby_response", {"action": "game_created", "session_id": session_id})
 
     async def _handle_join_game(self, payload: dict, player_id: int) -> str:
         """Handle a join_game message."""
@@ -455,7 +455,7 @@ class MessageHandler:
         if lobby_error is not None:
             return error_message(lobby_error.code, lobby_error.message)
 
-        return encode_message("join_game_success", {"session_id": session_id})
+        return encode_message("lobby_response", {"action": "game_joined", "session_id": session_id})
 
     async def _handle_start_game(self, payload: dict, player_id: int) -> str:
         """Handle a start_game message."""
@@ -470,7 +470,7 @@ class MessageHandler:
         if lobby_error is not None:
             return error_message(lobby_error.code, lobby_error.message)
 
-        return encode_message("start_game_success", {"session_id": session_id})
+        return encode_message("lobby_response", {"action": "game_started", "session_id": session_id})
 
     async def _handle_list_games(self) -> str:
         """Handle a list_games message."""
@@ -503,7 +503,8 @@ class MessageHandler:
             for s in active
         ]
 
-        return encode_message("list_games_result", {
+        return encode_message("lobby_response", {
+            "action": "game_list",
             "waiting": waiting_data,
             "active": active_data,
         })
@@ -521,7 +522,7 @@ class MessageHandler:
         if lobby_error is not None:
             return error_message(lobby_error.code, lobby_error.message)
 
-        return encode_message("watch_game_success", {"session_id": session_id})
+        return encode_message("lobby_response", {"action": "watch_started", "session_id": session_id})
 
     async def _handle_leave_spectate(self, payload: dict, player_id: int) -> str:
         """Handle a leave_spectate message."""
@@ -541,7 +542,7 @@ class MessageHandler:
         if not removed:
             return error_message("not_spectating", "You are not spectating this game.")
 
-        return encode_message("leave_spectate_success", {"session_id": session_id})
+        return encode_message("lobby_response", {"action": "leave_spectate", "session_id": session_id})
 
     # --- Game engine handlers ---
 

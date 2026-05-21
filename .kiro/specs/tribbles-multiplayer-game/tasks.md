@@ -493,8 +493,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
 - [x] 28. Checkpoint — Client UI complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 29. Integration wiring and WebSocket protocol
-  - [ ] 29.1 Wire server WebSocket handler to all services
+- [x] 29. Integration wiring and WebSocket protocol
+  - [x] 29.1 Wire server WebSocket handler to all services
     - Complete `server/src/protocol/handler.py` message routing:
       - `register` / `login` → Auth_Service
       - `create_game` / `join_game` / `start_game` / `watch_game` / `leave_spectate` → Lobby_Service
@@ -506,7 +506,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Implement error response formatting with localised error codes
     - _Requirements: 18.1, 18.2, 20.7_
 
-  - [ ] 29.2 Wire client NetworkClient signals to UI scenes
+  - [x] 29.2 Wire client NetworkClient signals to UI scenes
     - Connect NetworkClient signals to appropriate scene handlers
     - LoginScreen: handle login_success, login_error, register_success, register_error signals
     - LobbyScreen: handle game_list_update, join_success, create_success signals

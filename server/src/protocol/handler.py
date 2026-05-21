@@ -267,9 +267,9 @@ class MessageHandler:
 
         filters = CardFilter(
             denomination=payload.get("denomination"),
-            power_name=payload.get("power_name"),
-            expansion=payload.get("expansion"),
-            card_name_substring=payload.get("card_name_substring"),
+            power_name=payload.get("power_name") or payload.get("power"),
+            expansion=payload.get("expansion") or payload.get("expansion_id"),
+            card_name_substring=payload.get("card_name_substring") or payload.get("name"),
         )
 
         cards = await self._card_repository.search_cards(filters)
@@ -286,7 +286,7 @@ class MessageHandler:
             for c in cards
         ]
 
-        return encode_message("search_cards_result", {"cards": cards_data})
+        return encode_message("card_response", {"action": "search_results", "cards": cards_data})
 
     # --- Deck service handlers ---
 

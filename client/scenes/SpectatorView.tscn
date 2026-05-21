@@ -1,4 +1,6 @@
-[gd_scene format=3 uid="uid://spectator_view"]
+[gd_scene load_steps=2 format=3 uid="uid://spectator_view"]
+
+[ext_resource type="Script" path="res://scripts/SpectatorView.gd" id="1_script"]
 
 [node name="SpectatorView" type="Control"]
 layout_mode = 3
@@ -7,19 +9,94 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_script")
 
-[node name="Label" type="Label" parent="."]
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.1, 0.12, 1)
+
+[node name="GameInfoPanel" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 10.0
+offset_right = 150.0
+offset_bottom = 100.0
+grow_horizontal = 2
+
+[node name="SpectatingLabel" type="Label" parent="GameInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="SequenceLabel" type="Label" parent="GameInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="DirectionLabel" type="Label" parent="GameInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="RoundLabel" type="Label" parent="GameInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="SpectatorCountLabel" type="Label" parent="GameInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="PlayerPositions" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LeaveButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 2
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -120.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 45.0
+grow_horizontal = 0
+
+[node name="EnlargedCardPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -60.0
-offset_top = -12.0
-offset_right = 60.0
-offset_bottom = 12.0
+offset_left = -100.0
+offset_top = -140.0
+offset_right = 100.0
+offset_bottom = 140.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "Spectator View"
+visible = false
+
+[node name="EnlargedCardLabel" type="Label" parent="EnlargedCardPanel"]
+unique_name_in_owner = true
+layout_mode = 2
 horizontal_alignment = 1
+vertical_alignment = 1

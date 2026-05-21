@@ -1,4 +1,6 @@
-[gd_scene format=3 uid="uid://game_table"]
+[gd_scene load_steps=2 format=3 uid="uid://game_table"]
+
+[ext_resource type="Script" path="res://scripts/GameTable.gd" id="1_script"]
 
 [node name="GameTable" type="Control"]
 layout_mode = 3
@@ -7,19 +9,167 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_script")
 
-[node name="Label" type="Label" parent="."]
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.15, 0.1, 1)
+
+[node name="GameInfoPanel" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 10.0
+offset_right = 150.0
+offset_bottom = 100.0
+grow_horizontal = 2
+
+[node name="SequenceLabel" type="Label" parent="GameInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="DirectionLabel" type="Label" parent="GameInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="RoundLabel" type="Label" parent="GameInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="SpectatorLabel" type="Label" parent="GameInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="PlayerPositions" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HandContainer" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 100.0
+offset_top = -140.0
+offset_right = -200.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+alignment = 1
+
+[node name="ActionPanel" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -190.0
+offset_top = -140.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="DrawButton" type="Button" parent="ActionPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="AcceptButton" type="Button" parent="ActionPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+
+[node name="DrawnCardLabel" type="Label" parent="ActionPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+horizontal_alignment = 1
+
+[node name="PromptOverlay" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -60.0
-offset_top = -12.0
-offset_right = 60.0
-offset_bottom = 12.0
+offset_left = -200.0
+offset_top = -150.0
+offset_right = 200.0
+offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "Game Table"
+visible = false
+
+[node name="PromptVBox" type="VBoxContainer" parent="PromptOverlay"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PromptTitle" type="Label" parent="PromptOverlay/PromptVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="PromptOptions" type="VBoxContainer" parent="PromptOverlay/PromptVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="EnlargedCardPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -140.0
+offset_right = 100.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+visible = false
+
+[node name="EnlargedCardLabel" type="Label" parent="EnlargedCardPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TurnIndicator" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -160.0
+offset_right = 100.0
+offset_bottom = -145.0
+grow_horizontal = 2
+grow_vertical = 0
 horizontal_alignment = 1

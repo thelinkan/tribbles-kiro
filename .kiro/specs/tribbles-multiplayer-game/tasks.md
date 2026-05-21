@@ -437,8 +437,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Display session details: player count, current players joined, session ID
     - _Requirements: 4.5, 4.12, 22.1_
 
-- [ ] 25. Implement Client — Game Table
-  - [ ] 25.1 Implement GameTable scene and player display
+- [x] 25. Implement Client — Game Table
+  - [x] 25.1 Implement GameTable scene and player display
     - Create `client/scripts/GameTable.gd`
     - Arrange all players around virtual table with local player at bottom
     - Display each player's draw deck (face-down with count), discard pile (top card visible), play pile (top card visible)
@@ -447,7 +447,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Display cumulative scores at each player position
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.7_
 
-  - [ ] 25.2 Implement hand display and turn interaction
+  - [x] 25.2 Implement hand display and turn interaction
     - Display local player's hand cards face-up
     - Highlight valid playable cards when it is local player's turn
     - Handle card selection → send play_card action
@@ -456,7 +456,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Handle drawn card display with Accept button (for non-matching draws)
     - _Requirements: 15.5, 15.6, 6.5, 6.6, 9.1_
 
-  - [ ] 25.3 Implement game state update handling
+  - [x] 25.3 Implement game state update handling
     - Listen for `game_state_update` messages from NetworkClient
     - Update all visual elements: piles, hands, scores, active player, sequence, direction
     - Handle `prompt` messages: display power activation choices
@@ -466,7 +466,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Handle `spectator_count_update`: display spectator count
     - _Requirements: 15.4, 21.9, 21.10, 21.11, 22.6_
 
-  - [ ] 25.4 Implement SpectatorView scene
+  - [x] 25.4 Implement SpectatorView scene
     - Create `client/scripts/SpectatorView.gd`
     - Read-only game table: all public info (play piles, discard piles, draw deck counts, scores, sequence, direction, active player)
     - No hand contents displayed, no action buttons

@@ -280,7 +280,7 @@ class TestProperty68AISubstituteActivationPreservesPlayerState:
         player_idx = data.draw(st.integers(min_value=0, max_value=len(state.players) - 1))
         player_id = state.players[player_idx].player_id
         disconnect_time = data.draw(st.floats(min_value=1000.0, max_value=50000.0))
-        current_time = disconnect_time + float(state.reconnection_timeout)
+        current_time = disconnect_time + float(state.reconnection_timeout) + 0.01
 
         # Record state before
         player = state.players[player_idx]

@@ -490,7 +490,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - _Requirements: 17.1, 17.2, 17.3_
 
 
-- [ ] 28. Checkpoint — Client UI complete
+- [x] 28. Checkpoint — Client UI complete
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 29. Integration wiring and WebSocket protocol

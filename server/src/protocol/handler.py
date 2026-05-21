@@ -341,15 +341,37 @@ class MessageHandler:
         if deck_error is not None:
             return error_message(deck_error.code, deck_error.message)
 
-        deck_data = {
+        # Enrich card entries with card details from the repository
+        cards_list = []
+        for card_id, quantity in deck.cards.items():
+            card_detail = None
+            if self._card_repository:
+                card_detail = await self._card_repository.get_card(int(card_id))
+            if card_detail:
+                cards_list.append({
+                    "card_id": card_detail.card_id,
+                    "card_name": card_detail.card_name,
+                    "denomination": card_detail.denomination,
+                    "power_text": card_detail.power_text,
+                    "quantity": quantity,
+                })
+            else:
+                cards_list.append({
+                    "card_id": int(card_id),
+                    "card_name": f"Card {card_id}",
+                    "denomination": 0,
+                    "power_text": "",
+                    "quantity": quantity,
+                })
+
+        return encode_message("deck_response", {
+            "action": "deck_loaded",
             "deck_id": deck.deck_id,
             "deck_name": deck.deck_name,
-            "owner_player_id": deck.owner_player_id,
             "is_public": deck.is_public,
-            "comment_text": deck.comment_text,
-            "cards": deck.cards,
-        }
-        return encode_message("load_deck_result", {"deck": deck_data})
+            "comment": deck.comment_text or "",
+            "cards": cards_list,
+        })
 
     async def _handle_list_decks(self, player_id: int) -> str:
         """Handle a list_decks message."""
@@ -367,7 +389,7 @@ class MessageHandler:
             }
             for d in decks
         ]
-        return encode_message("list_decks_result", {"decks": decks_data})
+        return encode_message("deck_response", {"action": "deck_list", "decks": decks_data})
 
     async def _handle_copy_deck(self, payload: dict, player_id: int) -> str:
         """Handle a copy_deck message."""
@@ -382,7 +404,7 @@ class MessageHandler:
         if deck_error is not None:
             return error_message(deck_error.code, deck_error.message)
 
-        return encode_message("copy_deck_success", {"deck_id": new_deck_id})
+        return encode_message("deck_response", {"action": "deck_copied", "deck_id": new_deck_id})
 
     # --- Lobby service handlers ---
 

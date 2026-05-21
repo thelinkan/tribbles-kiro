@@ -427,8 +427,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - _Requirements: 3.8, 3.9, 3.11, 3.12_
 
 
-- [ ] 24. Implement Client — Lobby Screen
-  - [ ] 24.1 Implement LobbyScreen with game list and actions
+- [x] 24. Implement Client — Lobby Screen
+  - [x] 24.1 Implement LobbyScreen with game list and actions
     - Create `client/scripts/LobbyScreen.gd`
     - Two-category game list: waiting sessions (joinable) and active sessions (watchable)
     - Create Game button: select deck (prevent < 35 cards), choose player count (4–8), send create_game

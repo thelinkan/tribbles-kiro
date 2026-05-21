@@ -5,9 +5,11 @@ card power effects. It handles the two-phase activation flow:
   Phase 1: Prompt player to activate or decline the power.
   Phase 2: Execute the power effect (possibly with additional target selection).
 
-Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8
+Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 11.1, 11.2, 11.3,
+              11.4, 11.5, 11.6, 11.7, 11.8, 11.9
 """
 
+import random
 from typing import List, Optional, Tuple, Union
 
 from models import CardInstance, GameState, PendingPower, PlayerState
@@ -15,13 +17,24 @@ from scoring.service import ScoreService
 
 
 # Powers that can be activated (have an effect beyond just being played)
-ACTIVATABLE_POWERS = {"discard", "go", "skip", "poison", "rescue", "reverse"}
+ACTIVATABLE_POWERS = {
+    "discard", "go", "skip", "poison", "rescue", "reverse",
+    # Expansion 3: More Tribbles More Troubles
+    "copy", "cycle", "draw", "exchange", "kill", "recycle", "replay", "score",
+}
 
 # Powers that require a target or choice after activation
-POWERS_NEEDING_TARGET = {"discard", "poison", "rescue"}
+POWERS_NEEDING_TARGET = {
+    "discard", "poison", "rescue",
+    # Expansion 3
+    "copy", "cycle", "draw", "exchange", "kill", "recycle", "replay", "score",
+}
 
 # Powers that execute immediately on activation (no target needed)
 IMMEDIATE_POWERS = {"go", "skip", "reverse"}
+
+# Antidote is a passive power — it triggers during Poison resolution, not actively played
+PASSIVE_POWERS = {"antidote"}
 
 
 class PowerResolver:
@@ -389,6 +402,133 @@ class PowerResolver:
                 }
             ]
 
+        elif power_name == "copy":
+            # Prompt to choose another player's play pile to copy from
+            valid_targets = []
+            for i, p in enumerate(game_state.players):
+                if i != player_index and len(p.play_pile) > 0:
+                    valid_targets.append(i)
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_target_player",
+                    "player_id": player.player_id,
+                    "power_name": "copy",
+                    "options": valid_targets,
+                    "message": "Choose a player whose top play pile card to copy.",
+                }
+            ]
+
+        elif power_name == "cycle":
+            # Prompt to choose a card from hand to place under draw deck
+            card_ids = [c.card_id for c in player.hand]
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_card_from_hand",
+                    "player_id": player.player_id,
+                    "power_name": "cycle",
+                    "options": card_ids,
+                    "message": "Choose a card from your hand to place under your draw deck.",
+                }
+            ]
+
+        elif power_name == "draw":
+            # Prompt to choose any player to draw a card
+            valid_targets = []
+            for i, p in enumerate(game_state.players):
+                if len(p.draw_deck) > 0:
+                    valid_targets.append(i)
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_target_player",
+                    "player_id": player.player_id,
+                    "power_name": "draw",
+                    "options": valid_targets,
+                    "message": "Choose any player to draw one card from their draw deck.",
+                }
+            ]
+
+        elif power_name == "exchange":
+            # Prompt to choose a card from hand to discard
+            card_ids = [c.card_id for c in player.hand]
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_card_from_hand",
+                    "player_id": player.player_id,
+                    "power_name": "exchange",
+                    "options": card_ids,
+                    "message": "Choose a card from your hand to discard for Exchange.",
+                }
+            ]
+
+        elif power_name == "kill":
+            # Prompt to choose any player with cards in their play pile
+            valid_targets = []
+            for i, p in enumerate(game_state.players):
+                if len(p.play_pile) > 0:
+                    valid_targets.append(i)
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_target_player",
+                    "player_id": player.player_id,
+                    "power_name": "kill",
+                    "options": valid_targets,
+                    "message": "Choose a player to discard the top of their play pile.",
+                }
+            ]
+
+        elif power_name == "recycle":
+            # Prompt to choose any player with cards in their discard pile
+            valid_targets = []
+            for i, p in enumerate(game_state.players):
+                if len(p.discard_pile) > 0:
+                    valid_targets.append(i)
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_target_player",
+                    "player_id": player.player_id,
+                    "power_name": "recycle",
+                    "options": valid_targets,
+                    "message": "Choose a player to shuffle their discard pile into their draw deck.",
+                }
+            ]
+
+        elif power_name == "replay":
+            # Prompt to choose a card from own play pile
+            card_ids = [c.card_id for c in player.play_pile]
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_card_from_play_pile",
+                    "player_id": player.player_id,
+                    "power_name": "replay",
+                    "options": card_ids,
+                    "message": "Choose a card from your play pile to play again.",
+                }
+            ]
+
+        elif power_name == "score":
+            # Prompt to choose any other player to mark as Score target
+            valid_targets = []
+            for i, p in enumerate(game_state.players):
+                if i != player_index:
+                    valid_targets.append(i)
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_target_player",
+                    "player_id": player.player_id,
+                    "power_name": "score",
+                    "options": valid_targets,
+                    "message": "Choose a player to mark as Score target.",
+                }
+            ]
+
         return []
 
     def _handle_target_choice(
@@ -416,6 +556,22 @@ class PowerResolver:
             return self._execute_poison(game_state, player_index, choice)
         elif power_name == "rescue":
             return self._execute_rescue(game_state, player_index, choice)
+        elif power_name == "copy":
+            return self._execute_copy(game_state, player_index, choice)
+        elif power_name == "cycle":
+            return self._execute_cycle(game_state, player_index, choice)
+        elif power_name == "draw":
+            return self._execute_draw(game_state, player_index, choice)
+        elif power_name == "exchange":
+            return self._execute_exchange(game_state, player_index, choice)
+        elif power_name == "kill":
+            return self._execute_kill(game_state, player_index, choice)
+        elif power_name == "recycle":
+            return self._execute_recycle(game_state, player_index, choice)
+        elif power_name == "replay":
+            return self._execute_replay(game_state, player_index, choice)
+        elif power_name == "score":
+            return self._execute_score(game_state, player_index, choice)
 
         return ("unknown_power", f"Unknown power for target choice: {power_name}")
 
@@ -471,6 +627,9 @@ class PowerResolver:
     ) -> Union[List[dict], Tuple[str, str]]:
         """Execute the Poison power: discard top of target's draw deck, score denomination.
 
+        If the top card of the target's draw deck has the Antidote power, the
+        targeted player scores instead and may place their hand beneath their draw deck.
+
         Args:
             game_state: The current game state (modified in place).
             player_index: Index of the player activating Poison.
@@ -479,7 +638,7 @@ class PowerResolver:
         Returns:
             List of events on success, or error tuple on failure.
 
-        Requirements: 9.5
+        Requirements: 9.5, 11.1
         """
         target_index = choice.get("target_player_index")
 
@@ -504,8 +663,37 @@ class PowerResolver:
                 "Target player has no cards in their draw deck.",
             )
 
-        # Discard top card of target's draw deck
-        top_card = target.draw_deck.pop(0)
+        # Check for Antidote on the top card of target's draw deck (Requirement 11.1)
+        top_card = target.draw_deck[0]
+        if top_card.power_text.lower().strip() == "antidote":
+            # Antidote triggers: targeted player scores instead
+            target.draw_deck.pop(0)
+            target.discard_pile.append(top_card)
+
+            # Target scores the denomination (instead of Poison player)
+            self._score_service.apply_immediate_score(
+                game_state, target.player_id, top_card.denomination
+            )
+
+            # Allow target to place hand beneath draw deck
+            target.draw_deck.extend(target.hand)
+            target.hand.clear()
+
+            return [
+                {
+                    "type": "power_activated",
+                    "power_name": "poison",
+                    "player_id": game_state.players[player_index].player_id,
+                    "target_player_id": target.player_id,
+                    "antidote_triggered": True,
+                    "discarded_card_id": top_card.card_id,
+                    "discarded_card_denomination": top_card.denomination,
+                    "points_scored_by_target": top_card.denomination,
+                }
+            ]
+
+        # Normal Poison: discard top card of target's draw deck
+        target.draw_deck.pop(0)
         target.discard_pile.append(top_card)
 
         # Score the denomination for the active player
@@ -605,3 +793,438 @@ class PowerResolver:
                     "action": "placed_on_draw_deck",
                 }
             ]
+
+    def _execute_copy(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Copy power: apply game text of top card of another player's play pile.
+
+        Cannot copy the Quadruple power.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Copy.
+            choice: Dict with "target_player_index" specifying whose play pile to copy from.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 11.2, 12.10
+        """
+        target_index = choice.get("target_player_index")
+
+        if target_index is None:
+            return (
+                "missing_target",
+                "Copy power requires a target_player_index choice.",
+            )
+
+        if target_index == player_index:
+            return ("invalid_target", "Cannot copy from your own play pile.")
+
+        if target_index < 0 or target_index >= len(game_state.players):
+            return ("invalid_target", "Target player index out of range.")
+
+        target = game_state.players[target_index]
+
+        if len(target.play_pile) == 0:
+            return (
+                "invalid_target",
+                "Target player has no cards in their play pile.",
+            )
+
+        # Get the top card of the target's play pile
+        top_card = target.play_pile[-1]
+        copied_power = top_card.power_text.lower().strip()
+
+        # Cannot copy Quadruple (Requirement 12.10)
+        if copied_power == "quadruple":
+            return (
+                "cannot_copy_quadruple",
+                "The Copy power cannot copy Quadruple.",
+            )
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "copy",
+                "player_id": game_state.players[player_index].player_id,
+                "target_player_id": target.player_id,
+                "copied_card_id": top_card.card_id,
+                "copied_power": copied_power,
+            }
+        ]
+
+    def _execute_cycle(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Cycle power: place one hand card under draw deck, draw one from top.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Cycle.
+            choice: Dict with "card_id" specifying which card to place under draw deck.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 11.3
+        """
+        player = game_state.players[player_index]
+        card_id = choice.get("card_id")
+
+        if card_id is None:
+            return ("missing_card_id", "Cycle power requires a card_id choice.")
+
+        # Find the card in hand
+        card_index = None
+        card = None
+        for i, c in enumerate(player.hand):
+            if c.card_id == card_id:
+                card_index = i
+                card = c
+                break
+
+        if card_index is None:
+            return ("card_not_in_hand", f"Card {card_id} is not in your hand.")
+
+        # Place the chosen card under the draw deck
+        player.hand.pop(card_index)
+        player.draw_deck.append(card)
+
+        # Draw one card from the top of the draw deck
+        if len(player.draw_deck) > 0:
+            drawn_card = player.draw_deck.pop(0)
+            player.hand.append(drawn_card)
+        else:
+            drawn_card = None
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "cycle",
+                "player_id": player.player_id,
+                "placed_card_id": card.card_id,
+                "drawn_card_id": drawn_card.card_id if drawn_card else None,
+            }
+        ]
+
+    def _execute_draw(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Draw power: chosen player draws one card from their draw deck.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Draw.
+            choice: Dict with "target_player_index" specifying who draws.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 11.4
+        """
+        target_index = choice.get("target_player_index")
+
+        if target_index is None:
+            return (
+                "missing_target",
+                "Draw power requires a target_player_index choice.",
+            )
+
+        if target_index < 0 or target_index >= len(game_state.players):
+            return ("invalid_target", "Target player index out of range.")
+
+        target = game_state.players[target_index]
+
+        if len(target.draw_deck) == 0:
+            return (
+                "invalid_target",
+                "Target player has no cards in their draw deck.",
+            )
+
+        # Target draws one card from the top of their draw deck
+        drawn_card = target.draw_deck.pop(0)
+        target.hand.append(drawn_card)
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "draw",
+                "player_id": game_state.players[player_index].player_id,
+                "target_player_id": target.player_id,
+                "drawn_card_id": drawn_card.card_id,
+            }
+        ]
+
+    def _execute_exchange(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Exchange power: discard one hand card, take one from discard pile.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Exchange.
+            choice: Dict with "card_id" (card to discard from hand) and
+                "take_card_id" (card to take from discard pile).
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 11.5
+        """
+        player = game_state.players[player_index]
+        card_id = choice.get("card_id")
+        take_card_id = choice.get("take_card_id")
+
+        if card_id is None:
+            return ("missing_card_id", "Exchange power requires a card_id choice.")
+
+        if take_card_id is None:
+            return (
+                "missing_take_card_id",
+                "Exchange power requires a take_card_id choice.",
+            )
+
+        # Find the card to discard from hand
+        discard_index = None
+        discard_card = None
+        for i, c in enumerate(player.hand):
+            if c.card_id == card_id:
+                discard_index = i
+                discard_card = c
+                break
+
+        if discard_index is None:
+            return ("card_not_in_hand", f"Card {card_id} is not in your hand.")
+
+        # Find the card to take from discard pile
+        take_index = None
+        take_card = None
+        for i, c in enumerate(player.discard_pile):
+            if c.card_id == take_card_id:
+                take_index = i
+                take_card = c
+                break
+
+        if take_index is None:
+            return (
+                "card_not_in_discard",
+                f"Card {take_card_id} is not in your discard pile.",
+            )
+
+        # Discard the hand card
+        player.hand.pop(discard_index)
+        player.discard_pile.append(discard_card)
+
+        # Take the card from discard pile into hand
+        player.discard_pile.pop(take_index)
+        player.hand.append(take_card)
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "exchange",
+                "player_id": player.player_id,
+                "discarded_card_id": discard_card.card_id,
+                "taken_card_id": take_card.card_id,
+            }
+        ]
+
+    def _execute_kill(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Kill power: discard top card of target's play pile.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Kill.
+            choice: Dict with "target_player_index" specifying the target.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 11.6
+        """
+        target_index = choice.get("target_player_index")
+
+        if target_index is None:
+            return (
+                "missing_target",
+                "Kill power requires a target_player_index choice.",
+            )
+
+        if target_index < 0 or target_index >= len(game_state.players):
+            return ("invalid_target", "Target player index out of range.")
+
+        target = game_state.players[target_index]
+
+        if len(target.play_pile) == 0:
+            return (
+                "invalid_target",
+                "Target player has no cards in their play pile.",
+            )
+
+        # Discard the top card of the target's play pile
+        top_card = target.play_pile.pop()
+        target.discard_pile.append(top_card)
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "kill",
+                "player_id": game_state.players[player_index].player_id,
+                "target_player_id": target.player_id,
+                "killed_card_id": top_card.card_id,
+                "killed_card_denomination": top_card.denomination,
+            }
+        ]
+
+    def _execute_recycle(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Recycle power: shuffle target's discard pile into their draw deck.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Recycle.
+            choice: Dict with "target_player_index" specifying the target.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 11.7
+        """
+        target_index = choice.get("target_player_index")
+
+        if target_index is None:
+            return (
+                "missing_target",
+                "Recycle power requires a target_player_index choice.",
+            )
+
+        if target_index < 0 or target_index >= len(game_state.players):
+            return ("invalid_target", "Target player index out of range.")
+
+        target = game_state.players[target_index]
+
+        if len(target.discard_pile) == 0:
+            return (
+                "invalid_target",
+                "Target player has no cards in their discard pile.",
+            )
+
+        # Move all discard pile cards into draw deck and shuffle
+        target.draw_deck.extend(target.discard_pile)
+        target.discard_pile.clear()
+        random.shuffle(target.draw_deck)
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "recycle",
+                "player_id": game_state.players[player_index].player_id,
+                "target_player_id": target.player_id,
+            }
+        ]
+
+    def _execute_replay(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Replay power: search own play pile, play one card again.
+
+        The chosen card is removed from the play pile and placed back on top
+        of the play pile as if played from hand.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Replay.
+            choice: Dict with "card_id" specifying which card to replay.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 11.8
+        """
+        player = game_state.players[player_index]
+        card_id = choice.get("card_id")
+
+        if card_id is None:
+            return ("missing_card_id", "Replay power requires a card_id choice.")
+
+        # Find the card in play pile
+        card_index = None
+        card = None
+        for i, c in enumerate(player.play_pile):
+            if c.card_id == card_id:
+                card_index = i
+                card = c
+                break
+
+        if card_index is None:
+            return (
+                "card_not_in_play_pile",
+                f"Card {card_id} is not in your play pile.",
+            )
+
+        # Remove from play pile and place back on top (as if played from hand)
+        player.play_pile.pop(card_index)
+        player.play_pile.append(card)
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "replay",
+                "player_id": player.player_id,
+                "replayed_card_id": card.card_id,
+                "replayed_card_name": card.card_name,
+                "replayed_card_denomination": card.denomination,
+            }
+        ]
+
+    def _execute_score(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Score power: mark target player as Score target.
+
+        If the target plays a card on their next turn, the Score activator
+        gains points equal to that card's denomination.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Score.
+            choice: Dict with "target_player_index" specifying the target.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 11.9
+        """
+        target_index = choice.get("target_player_index")
+
+        if target_index is None:
+            return (
+                "missing_target",
+                "Score power requires a target_player_index choice.",
+            )
+
+        if target_index == player_index:
+            return ("invalid_target", "Cannot target yourself with Score.")
+
+        if target_index < 0 or target_index >= len(game_state.players):
+            return ("invalid_target", "Target player index out of range.")
+
+        target = game_state.players[target_index]
+        player = game_state.players[player_index]
+
+        # Mark the target with the Score power activator's player_id
+        target.score_target_by = player.player_id
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "score",
+                "player_id": player.player_id,
+                "target_player_id": target.player_id,
+            }
+        ]

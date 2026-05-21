@@ -219,8 +219,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Validates: Requirements 10.1**
 
 
-- [ ] 12. Implement Card Powers — More Tribbles More Troubles Expansion
-  - [ ] 12.1 Implement expansion 3 powers
+- [x] 12. Implement Card Powers — More Tribbles More Troubles Expansion
+  - [x] 12.1 Implement expansion 3 powers
     - Implement Antidote power: when Poison targets a player whose top draw card has Antidote, reverse scoring and allow hand placement under draw deck
     - Implement Copy power: apply game text of top card of any other player's play pile (cannot copy Quadruple)
     - Implement Cycle power: place one hand card under draw deck, draw one from top
@@ -232,7 +232,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Implement Score power: mark target, if target plays next turn → activator gains that card's denomination
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9_
 
-  - [ ]* 12.2 Write property tests for expansion 3 powers
+  - [x]* 12.2 Write property tests for expansion 3 powers
     - **Property 36: Antidote reverses Poison scoring**
     - **Property 37: Copy power applies target's top play pile card effect**
     - **Property 38: Cycle preserves hand size**

@@ -59,6 +59,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
+[node name="JoinButton" type="Button" parent="MarginContainer/VBoxContainer/HSplitContainer/WaitingPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Join Game"
+
 [node name="ActivePanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -80,64 +85,64 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
+[node name="WatchButton" type="Button" parent="MarginContainer/VBoxContainer/HSplitContainer/ActivePanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Watch Game"
+
 [node name="SessionDetailsLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 text = ""
 horizontal_alignment = 1
 
-[node name="ActionPanel" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="CreateGamePanel" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="CreateGameMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/CreateGamePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="CreateGameHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CreateGamePanel/CreateGameMargin"]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="DeckSection" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ActionPanel"]
+[node name="DeckSection" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CreateGamePanel/CreateGameMargin/CreateGameHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 5
+theme_override_constants/separation = 4
 
-[node name="DeckLabel" type="Label" parent="MarginContainer/VBoxContainer/ActionPanel/DeckSection"]
+[node name="DeckLabel" type="Label" parent="MarginContainer/VBoxContainer/CreateGamePanel/CreateGameMargin/CreateGameHBox/DeckSection"]
 layout_mode = 2
 text = "Deck:"
 
-[node name="DeckSelector" type="OptionButton" parent="MarginContainer/VBoxContainer/ActionPanel/DeckSection"]
+[node name="DeckSelector" type="OptionButton" parent="MarginContainer/VBoxContainer/CreateGamePanel/CreateGameMargin/CreateGameHBox/DeckSection"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="CreateSection" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ActionPanel"]
+[node name="PlayerCountSection" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CreateGamePanel/CreateGameMargin/CreateGameHBox"]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 5
+theme_override_constants/separation = 4
 
-[node name="PlayerCountLabel" type="Label" parent="MarginContainer/VBoxContainer/ActionPanel/CreateSection"]
+[node name="PlayerCountLabel" type="Label" parent="MarginContainer/VBoxContainer/CreateGamePanel/CreateGameMargin/CreateGameHBox/PlayerCountSection"]
 layout_mode = 2
 text = "Player Count:"
 
-[node name="PlayerCountSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ActionPanel/CreateSection"]
+[node name="PlayerCountSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/CreateGamePanel/CreateGameMargin/CreateGameHBox/PlayerCountSection"]
 unique_name_in_owner = true
 layout_mode = 2
 min_value = 4.0
 max_value = 8.0
 value = 4.0
 
-[node name="CreateButton" type="Button" parent="MarginContainer/VBoxContainer/ActionPanel/CreateSection"]
+[node name="CreateButton" type="Button" parent="MarginContainer/VBoxContainer/CreateGamePanel/CreateGameMargin/CreateGameHBox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 5
 text = "Create Game"
-
-[node name="JoinWatchSection" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ActionPanel"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 5
-
-[node name="JoinButton" type="Button" parent="MarginContainer/VBoxContainer/ActionPanel/JoinWatchSection"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Join Game"
-
-[node name="WatchButton" type="Button" parent="MarginContainer/VBoxContainer/ActionPanel/JoinWatchSection"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Watch Game"
 
 [node name="ErrorLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true

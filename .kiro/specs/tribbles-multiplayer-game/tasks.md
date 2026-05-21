@@ -153,8 +153,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5**
 
 
-- [ ] 8. Implement Score_Service and end-of-round logic
-  - [ ] 8.1 Implement round scoring and round transitions
+- [x] 8. Implement Score_Service and end-of-round logic
+  - [x] 8.1 Implement round scoring and round transitions
     - Create `server/src/scoring/service.py` with `Score_Service` class
     - Implement `calculate_round_scores(game_state)` — sum denominations in play pile for players who went out
     - Implement `apply_immediate_score(game_id, player_id, points)` — add points to cumulative score
@@ -165,24 +165,24 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Reset sequence to 1 and direction to clockwise each new round
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 7.6, 7.7_
 
-  - [ ]* 8.2 Write property tests for scoring and round transitions
+  - [x]* 8.2 Write property tests for scoring and round transitions
     - **Property 25: Decked player round transition**
     - **Property 26: End-of-round scoring and cleanup**
     - **Property 27: New round starting player selection**
     - **Validates: Requirements 7.6, 7.7, 8.1, 8.2, 8.3, 8.4, 8.7, 8.8**
 
-  - [ ] 8.3 Implement game end condition
+  - [x] 8.3 Implement game end condition
     - End game after 5 rounds completed
     - Transition session to completed state
     - Determine winner (highest cumulative score)
     - Broadcast final scores to all players
     - _Requirements: 16.1, 16.2_
 
-  - [ ]* 8.4 Write property test for game end
+  - [x]* 8.4 Write property test for game end
     - **Property 65: Game ends after five rounds**
     - **Validates: Requirements 16.1, 16.2**
 
-- [ ] 9. Checkpoint — Core game loop complete
+- [x] 9. Checkpoint — Core game loop complete
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 10. Implement Card Powers — Base Set

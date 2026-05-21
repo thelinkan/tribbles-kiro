@@ -232,7 +232,7 @@ class MessageHandler:
         if auth_error is not None:
             return error_message(auth_error.code, auth_error.message)
 
-        return encode_message("register_success", {"player_id": player_id})
+        return encode_message("register_response", {"player_id": player_id})
 
     async def _handle_login(self, payload: dict, websocket: ServerConnection) -> str:
         """Handle a login message."""
@@ -254,7 +254,7 @@ class MessageHandler:
         if player_id is not None:
             self._authenticated_connections[websocket] = player_id
 
-        return encode_message("login_success", {"token": token, "player_id": player_id})
+        return encode_message("login_response", {"token": token, "player_id": player_id})
 
     # --- Card repository handlers ---
 

@@ -381,15 +381,15 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - _Requirements: 18.3_
 
 
-- [ ] 21. Set up Godot 4 client project structure
-  - [ ] 21.1 Create Godot project and scene hierarchy
+- [x] 21. Set up Godot 4 client project structure
+  - [x] 21.1 Create Godot project and scene hierarchy
     - Create `client/` directory with `project.godot` configuration
     - Create scene files: `LoginScreen.tscn`, `MainMenu.tscn`, `DeckBuilder.tscn`, `LobbyScreen.tscn`, `GameTable.tscn`, `SpectatorView.tscn`, `EndOfRoundScreen.tscn`, `EndOfGameScreen.tscn`, `SettingsScreen.tscn`
     - Create autoload singleton script `NetworkClient.gd` for WebSocket management
     - Set up GUT (Godot Unit Test) addon for client testing
     - _Requirements: 1.7, 19.2_
 
-  - [ ] 21.2 Implement NetworkClient autoload singleton
+  - [x] 21.2 Implement NetworkClient autoload singleton
     - Create `client/scripts/autoload/NetworkClient.gd`
     - Implement WebSocket connection management (connect, disconnect, reconnect with exponential backoff)
     - Implement JSON message serialisation/deserialisation matching server protocol
@@ -398,7 +398,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Handle connection lost: display reconnection overlay
     - _Requirements: 1.9, 21.6_
 
-  - [ ] 21.3 Set up localisation system
+  - [x] 21.3 Set up localisation system
     - Create `client/translations/` directory with CSV translation files
     - Define translation keys for all UI strings
     - Implement English (default) and Swedish translations

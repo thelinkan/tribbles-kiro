@@ -1,0 +1,78 @@
+keys,en,sv
+UI_LOGIN_TITLE,Login,Logga in
+UI_REGISTER_TITLE,Register,Registrera
+UI_USERNAME,Username,Användarnamn
+UI_PASSWORD,Password,Lösenord
+UI_EMAIL,Email,E-post
+UI_SERVER_ADDRESS,Server Address,Serveradress
+UI_LOGIN_BUTTON,Log In,Logga in
+UI_REGISTER_BUTTON,Register,Registrera
+UI_SWITCH_TO_REGISTER,Create an account,Skapa ett konto
+UI_SWITCH_TO_LOGIN,Already have an account?,Har du redan ett konto?
+UI_MAIN_MENU_TITLE,Main Menu,Huvudmeny
+UI_DECK_BUILDER,Deck Builder,Kortleksbyggare
+UI_LOBBY,Lobby,Lobby
+UI_SETTINGS,Settings,Inställningar
+UI_LOGOUT,Log Out,Logga ut
+UI_DECK_NAME,Deck Name,Kortleksnamn
+UI_DECK_PUBLIC,Public,Offentlig
+UI_DECK_PRIVATE,Private,Privat
+UI_DECK_COMMENT,Comment,Kommentar
+UI_DECK_SAVE,Save Deck,Spara kortlek
+UI_DECK_LOAD,Load Deck,Ladda kortlek
+UI_DECK_COPY,Copy Deck,Kopiera kortlek
+UI_DECK_CARD_COUNT,Card Count,Antal kort
+UI_DECK_MINIMUM_WARNING,Deck needs at least 35 cards for game use,Kortleken behöver minst 35 kort för spelbruk
+UI_CARD_SEARCH,Search Cards,Sök kort
+UI_CARD_FILTER_DENOMINATION,Denomination,Valör
+UI_CARD_FILTER_POWER,Power,Kraft
+UI_CARD_FILTER_EXPANSION,Expansion,Expansion
+UI_CARD_FILTER_NAME,Card Name,Kortnamn
+UI_LOBBY_WAITING_GAMES,Waiting Games,Väntande spel
+UI_LOBBY_ACTIVE_GAMES,Active Games,Aktiva spel
+UI_LOBBY_CREATE_GAME,Create Game,Skapa spel
+UI_LOBBY_JOIN_GAME,Join Game,Gå med i spel
+UI_LOBBY_WATCH_GAME,Watch Game,Titta på spel
+UI_LOBBY_START_GAME,Start Game,Starta spel
+UI_LOBBY_PLAYER_COUNT,Player Count,Antal spelare
+UI_GAME_YOUR_TURN,Your Turn,Din tur
+UI_GAME_PLAY_CARD,Play Card,Spela kort
+UI_GAME_DRAW_CARD,Draw Card,Dra kort
+UI_GAME_ACCEPT_DRAW,Accept,Acceptera
+UI_GAME_ACTIVATE_POWER,Activate Power,Aktivera kraft
+UI_GAME_DECLINE_POWER,Decline,Avböj
+UI_GAME_SEQUENCE,Sequence,Sekvens
+UI_GAME_DIRECTION_CW,Clockwise,Medurs
+UI_GAME_DIRECTION_CCW,Counterclockwise,Moturs
+UI_GAME_SCORE,Score,Poäng
+UI_GAME_ROUND,Round,Omgång
+UI_GAME_HAND,Hand,Hand
+UI_GAME_DRAW_DECK,Draw Deck,Draghög
+UI_GAME_PLAY_PILE,Play Pile,Spelhög
+UI_GAME_DISCARD_PILE,Discard Pile,Kasseringshög
+UI_GAME_DECKED,Decked,Utslocknad
+UI_GAME_SPECTATORS,Spectators,Åskådare
+UI_END_ROUND_TITLE,End of Round,Slut på omgång
+UI_END_ROUND_SCORES,Round Scores,Omgångspoäng
+UI_END_ROUND_CUMULATIVE,Cumulative Scores,Totala poäng
+UI_END_GAME_TITLE,Game Over,Spelet slut
+UI_END_GAME_WINNER,Winner,Vinnare
+UI_END_GAME_FINAL_SCORES,Final Scores,Slutpoäng
+UI_SETTINGS_LANGUAGE,Language,Språk
+UI_SETTINGS_LANGUAGE_EN,English,Engelska
+UI_SETTINGS_LANGUAGE_SV,Swedish,Svenska
+UI_CONNECTION_LOST,Connection Lost,Anslutning förlorad
+UI_RECONNECTING,Reconnecting...,Återansluter...
+UI_RECONNECTION_FAILED,Reconnection Failed,Återanslutning misslyckades
+UI_PLAYER_DISCONNECTED,Player Disconnected,Spelare frånkopplad
+UI_PLAYER_RECONNECTED,Player Reconnected,Spelare återansluten
+UI_AI_SUBSTITUTE,AI Controlling,AI styr
+UI_ERROR_AUTH_FAILED,Authentication failed,Autentisering misslyckades
+UI_ERROR_USERNAME_TAKEN,Username already taken,Användarnamnet är redan taget
+UI_ERROR_SESSION_FULL,Game session is full,Spelsessionen är full
+UI_ERROR_GAME_STARTED,Game has already started,Spelet har redan startat
+UI_ERROR_INVALID_PLAYER_COUNT,Player count must be between 4 and 8,Antal spelare måste vara mellan 4 och 8
+UI_ERROR_DECK_TOO_SMALL,Deck does not meet minimum card count,Kortleken uppfyller inte minsta antal kort
+UI_POWER_CHOOSE_TARGET,Choose a target player,Välj en målspelare
+UI_POWER_CHOOSE_CARD,Choose a card,Välj ett kort
+UI_POWER_CHOOSE_POWER,Choose a power to freeze,Välj en kraft att frysa

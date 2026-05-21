@@ -82,6 +82,28 @@ class PendingDraw:
 
 
 @dataclass
+class PendingPower:
+    """Tracks a pending power activation that requires player input.
+
+    Attributes:
+        player_index: Index of the player who played the card with the power.
+        card: The card that was played with the power.
+        power_name: The name of the power being activated.
+        phase: The current phase of power resolution.
+            - "activate_or_decline": Waiting for player to choose activate/decline.
+            - "choose_target": Waiting for player to choose a target (e.g., Poison, Rescue).
+            - "choose_card": Waiting for player to choose a card (e.g., Discard).
+        options: Optional list of valid choices for the current phase.
+    """
+
+    player_index: int
+    card: CardInstance
+    power_name: str
+    phase: str = "activate_or_decline"
+    options: Optional[List[int]] = None
+
+
+@dataclass
 class GameState:
     """Represents the complete state of an active game session.
 
@@ -99,6 +121,7 @@ class GameState:
         game_status: Current status ("active", "round_end", or "completed").
         reconnection_timeout: Seconds to wait before activating AI substitute.
         pending_draw: Tracks a pending draw choice when a drawn card matches the sequence.
+        pending_power: Tracks a pending power activation that requires player input.
     """
 
     game_id: str
@@ -114,6 +137,7 @@ class GameState:
     game_status: str = "active"
     reconnection_timeout: int = 30
     pending_draw: Optional[PendingDraw] = None
+    pending_power: Optional[PendingPower] = None
 
 
 @dataclass

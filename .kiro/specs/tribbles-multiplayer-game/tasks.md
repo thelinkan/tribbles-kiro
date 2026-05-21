@@ -185,8 +185,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
 - [x] 9. Checkpoint — Core game loop complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 10. Implement Card Powers — Base Set
-  - [ ] 10.1 Implement PowerResolver framework and base powers
+- [x] 10. Implement Card Powers — Base Set
+  - [x] 10.1 Implement PowerResolver framework and base powers
     - Create `server/src/game/powers/resolver.py` with `PowerResolver` class
     - Implement power activation prompt logic (activate or decline)
     - Implement Discard power: prompt player to choose card from hand → move to discard pile
@@ -198,7 +198,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Implement Clone power: allow play when denomination matches last_played_denomination
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8_
 
-  - [ ]* 10.2 Write property tests for base powers
+  - [x]* 10.2 Write property tests for base powers
     - **Property 28: Power activation choice**
     - **Property 29: Discard power effect**
     - **Property 30: Go power grants additional turn**

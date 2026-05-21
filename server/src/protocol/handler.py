@@ -92,6 +92,7 @@ class MessageHandler:
             pass
 
         logger.debug("Routing '%s' from %s", msg_type, websocket.remote_address)
+        logger.info("Message received: type='%s' from %s", msg_type, websocket.remote_address)
 
         try:
             # For unauthenticated endpoints, route directly
@@ -432,12 +433,16 @@ class MessageHandler:
         if deck_id is None or player_count is None:
             return error_message("invalid_payload", "Missing deck_id or player_count.")
 
+        logger.info("Player %d creating game: deck_id=%s, player_count=%s", player_id, deck_id, player_count)
+
         session_id, lobby_error = await self._lobby_service.create_game(
             player_id, int(float(str(deck_id))), int(float(str(player_count)))
         )
         if lobby_error is not None:
+            logger.warning("Create game failed for player %d: %s", player_id, lobby_error.message)
             return error_message(lobby_error.code, lobby_error.message)
 
+        logger.info("Game created: session_id=%s by player %d", session_id, player_id)
         return encode_message("lobby_response", {"action": "game_created", "session_id": session_id})
 
     async def _handle_join_game(self, payload: dict, player_id: int) -> str:

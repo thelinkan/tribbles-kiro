@@ -171,6 +171,9 @@ func _rebuild_deck_selector() -> void:
 		if card_count < MINIMUM_DECK_SIZE:
 			suffix += " ⚠"
 		deck_selector.add_item(deck_name + suffix)
+	# Auto-select the first deck if available.
+	if deck_selector.item_count > 0:
+		deck_selector.selected = 0
 
 
 ## Display session details for the selected session.

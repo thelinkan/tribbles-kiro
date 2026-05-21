@@ -365,8 +365,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
 - [x] 19. Checkpoint — Server logic complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 20. Implement Hypothesis test generators
-  - [ ] 20.1 Create shared property test strategies and generators
+- [x] 20. Implement Hypothesis test generators
+  - [x] 20.1 Create shared property test strategies and generators
     - Create `server/tests/conftest.py` with shared fixtures
     - Create `server/tests/strategies.py` with Hypothesis custom strategies:
       - `valid_game_state()` — internally consistent GameState with valid player states

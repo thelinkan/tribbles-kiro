@@ -306,12 +306,27 @@ class MessageHandler:
         if self._deck_service is None:
             return error_message("not_implemented", "Deck service not available.")
 
-        deck_data = payload.get("deck_data")
-        if not deck_data:
-            return error_message("invalid_payload", "Missing deck_data.")
+        # The client sends deck fields directly in the payload
+        deck_data = payload.get("deck_data", payload)
+
+        # Convert cards from array format [{card_id, quantity}] to dict {card_id: quantity}
+        cards_raw = deck_data.get("cards", {})
+        if isinstance(cards_raw, list):
+            cards_dict = {}
+            for entry in cards_raw:
+                cid = entry.get("card_id")
+                qty = entry.get("quantity", 1)
+                if cid is not None:
+                    cards_dict[cid] = qty
+            deck_data = dict(deck_data)
+            deck_data["cards"] = cards_dict
+
+        # Map "comment" to "comment_text" if needed
+        if "comment" in deck_data and "comment_text" not in deck_data:
+            deck_data["comment_text"] = deck_data["comment"]
 
         deck_id = await self._deck_service.save_deck(player_id, deck_data)
-        return encode_message("save_deck_success", {"deck_id": deck_id})
+        return encode_message("deck_response", {"action": "deck_saved", "deck_id": deck_id})
 
     async def _handle_load_deck(self, payload: dict, player_id: int) -> str:
         """Handle a load_deck message."""

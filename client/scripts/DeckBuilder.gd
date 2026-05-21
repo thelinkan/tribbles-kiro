@@ -119,12 +119,16 @@ func _rebuild_deck_list_ui() -> void:
 	for child in deck_cards_list.get_children():
 		child.queue_free()
 
+	# Sort entries by denomination first, then card name.
+	var sorted_entries: Array = _deck_cards.values()
+	sorted_entries.sort_custom(_compare_deck_entries)
+
 	# Create an entry for each card in the deck.
-	for entry in _deck_cards.values():
+	for entry in sorted_entries:
 		var row := HBoxContainer.new()
 
 		var label := Label.new()
-		label.text = "%s (x%d)" % [entry["card_name"], entry["quantity"]]
+		label.text = "%s [%d] (x%d)" % [entry["card_name"], entry["denomination"], entry["quantity"]]
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(label)
 
@@ -173,6 +177,13 @@ func _on_search_pressed() -> void:
 		filters["name"] = name_text
 
 	NetworkClient.send_message("search_cards", filters)
+
+
+## Sort comparator: sort by denomination ascending, then card name ascending.
+func _compare_deck_entries(a: Dictionary, b: Dictionary) -> bool:
+	if a["denomination"] != b["denomination"]:
+		return a["denomination"] < b["denomination"]
+	return a["card_name"] < b["card_name"]
 
 
 ## Rebuild the search results list UI.

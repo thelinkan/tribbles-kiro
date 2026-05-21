@@ -100,6 +100,11 @@ class RoundManager:
             game_state, events
         )
 
+        # Step 3b: Track Time Warp reductions for next round (Requirement 13.4)
+        # For players who did NOT go out, count unique Time Warp denominations
+        # in their play pile. This must happen before play piles are cleared.
+        self._track_time_warp_reductions(game_state, events)
+
         # Step 4: Shuffle all players' play piles into their draw decks
         self._shuffle_play_piles_into_draw_decks(game_state, events)
 
@@ -245,6 +250,42 @@ class RoundManager:
 
         return sitting_out
 
+    def _track_time_warp_reductions(
+        self, game_state: GameState, events: List[dict]
+    ) -> None:
+        """Track Time Warp reductions for the next round.
+
+        For each player who did NOT go out, count unique Time Warp denominations
+        in their play pile. Store these in the player's time_warp_reductions set.
+        Same denomination does NOT stack (only unique denominations count).
+
+        Args:
+            game_state: The current game state (modified in place).
+            events: Events list to append to.
+
+        Requirements: 13.4
+        """
+        for player in game_state.players:
+            # Clear previous reductions
+            player.time_warp_reductions = set()
+
+            # Only applies to players who did NOT go out
+            if player.has_gone_out:
+                continue
+
+            # Find unique Time Warp denominations in play pile
+            for card in player.play_pile:
+                if card.power_text.lower().strip() == "time warp":
+                    player.time_warp_reductions.add(card.denomination)
+
+            if player.time_warp_reductions:
+                events.append({
+                    "type": "time_warp_reduction",
+                    "player_id": player.player_id,
+                    "unique_denominations": sorted(player.time_warp_reductions),
+                    "reduction": len(player.time_warp_reductions),
+                })
+
     def _shuffle_play_piles_into_draw_decks(
         self, game_state: GameState, events: List[dict]
     ) -> None:
@@ -271,30 +312,40 @@ class RoundManager:
         sitting_out_players: List[int],
         events: List[dict],
     ) -> None:
-        """Deal 7 cards from each active player's draw deck to their hand.
+        """Deal cards from each active player's draw deck to their hand.
 
         Players who are sitting out do not receive cards.
+        Time Warp reduces the number of cards dealt for players who did not go out
+        and have Time Warp cards in their play pile (checked before play piles are
+        cleared). The reduction is 1 per unique Time Warp denomination (min 1 card dealt).
 
         Args:
             game_state: The current game state (modified in place).
             sitting_out_players: List of player_ids who are sitting out.
             events: Events list to append to.
 
-        Requirements: 8.5
+        Requirements: 8.5, 13.4
         """
         for player in game_state.players:
             if player.player_id in sitting_out_players:
                 continue
 
-            cards_to_deal = min(self.CARDS_TO_DEAL, len(player.draw_deck))
+            # Calculate Time Warp reduction
+            time_warp_reduction = len(player.time_warp_reductions)
+            cards_to_deal_count = max(1, self.CARDS_TO_DEAL - time_warp_reduction)
+
+            cards_to_deal = min(cards_to_deal_count, len(player.draw_deck))
             player.hand = player.draw_deck[:cards_to_deal]
             player.draw_deck = player.draw_deck[cards_to_deal:]
 
-            events.append({
+            event = {
                 "type": "cards_dealt",
                 "player_id": player.player_id,
                 "cards_dealt": cards_to_deal,
-            })
+            }
+            if time_warp_reduction > 0:
+                event["time_warp_reduction"] = time_warp_reduction
+            events.append(event)
 
     def _determine_starting_player(
         self, game_state: GameState, round_scores: Dict[int, int]

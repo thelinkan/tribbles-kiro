@@ -23,6 +23,8 @@ ACTIVATABLE_POWERS = {
     "copy", "cycle", "draw", "exchange", "kill", "recycle", "replay", "score",
     # Expansion 4: No Tribble at All
     "battle", "evolve", "freeze", "mutate", "process", "toxin",
+    # Expansion 5: Trials and Tribble-ations
+    "avalanche", "famine", "stampede",
 }
 
 # Powers that require a target or choice after activation
@@ -32,13 +34,15 @@ POWERS_NEEDING_TARGET = {
     "copy", "cycle", "draw", "exchange", "kill", "recycle", "replay", "score",
     # Expansion 4
     "battle", "freeze", "process", "toxin",
+    # Expansion 5
+    "avalanche",
 }
 
 # Powers that execute immediately on activation (no target needed)
-IMMEDIATE_POWERS = {"go", "skip", "reverse", "evolve", "mutate"}
+IMMEDIATE_POWERS = {"go", "skip", "reverse", "evolve", "mutate", "famine", "stampede"}
 
 # Antidote is a passive power — it triggers during Poison resolution, not actively played
-PASSIVE_POWERS = {"antidote", "quadruple", "safety", "tally"}
+PASSIVE_POWERS = {"antidote", "quadruple", "safety", "tally", "time_warp"}
 
 
 class PowerResolver:
@@ -304,6 +308,10 @@ class PowerResolver:
             return self._execute_evolve(game_state, player_index)
         elif power_name == "mutate":
             return self._execute_mutate(game_state, player_index)
+        elif power_name == "famine":
+            return self._execute_famine(game_state, player_index)
+        elif power_name == "stampede":
+            return self._execute_stampede(game_state, player_index)
         return []
 
     def _execute_go(self, game_state: GameState, player_index: int) -> List[dict]:
@@ -695,6 +703,52 @@ class PowerResolver:
                 }
             ]
 
+        elif power_name == "avalanche":
+            # Avalanche: check if active player has >= 4 other cards in hand
+            # If condition met, all players discard one card, then active player
+            # discards one additional card. Prompt active player for additional discard.
+            if len(player.hand) < 4:
+                # Condition not met — power has no effect
+                return [
+                    {
+                        "type": "power_activated",
+                        "power_name": "avalanche",
+                        "player_id": player.player_id,
+                        "effect": "condition_not_met",
+                        "hand_size": len(player.hand),
+                    }
+                ]
+
+            # All players discard one card (auto-discard last card from hand)
+            for p in game_state.players:
+                if len(p.hand) > 0:
+                    discarded = p.hand.pop()
+                    p.discard_pile.append(discarded)
+
+            # Prompt active player to discard one additional card
+            card_ids = [c.card_id for c in player.hand]
+            if not card_ids:
+                # Active player has no more cards to discard
+                return [
+                    {
+                        "type": "power_activated",
+                        "power_name": "avalanche",
+                        "player_id": player.player_id,
+                        "effect": "all_discarded_no_additional",
+                    }
+                ]
+
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_card_from_hand",
+                    "player_id": player.player_id,
+                    "power_name": "avalanche",
+                    "options": card_ids,
+                    "message": "Avalanche: choose one additional card from your hand to discard.",
+                }
+            ]
+
         return []
 
     def _handle_target_choice(
@@ -751,6 +805,8 @@ class PowerResolver:
             return self._execute_process(game_state, player_index, choice)
         elif power_name == "toxin":
             return self._execute_toxin(game_state, player_index, choice)
+        elif power_name == "avalanche":
+            return self._execute_avalanche(game_state, player_index, choice)
 
         return ("unknown_power", f"Unknown power for target choice: {power_name}")
 
@@ -1795,3 +1851,172 @@ class PowerResolver:
                 "revealed_count": len(revealed_cards),
             }
         ]
+
+    # --- Expansion 5: Trials and Tribble-ations powers ---
+
+    def _execute_avalanche(
+        self, game_state: GameState, player_index: int, choice: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Execute the Avalanche power phase 2: active player discards one additional card.
+
+        The all-players discard already happened during the prompt phase.
+        Now the active player chooses one additional card to discard.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Avalanche.
+            choice: Dict with "card_id" specifying which additional card to discard.
+
+        Returns:
+            List of events on success, or error tuple on failure.
+
+        Requirements: 13.1
+        """
+        player = game_state.players[player_index]
+        card_id = choice.get("card_id")
+
+        if card_id is None:
+            return ("missing_card_id", "Avalanche power requires a card_id choice.")
+
+        # Find the card in hand
+        card_index = None
+        card = None
+        for i, c in enumerate(player.hand):
+            if c.card_id == card_id:
+                card_index = i
+                card = c
+                break
+
+        if card_index is None:
+            return ("card_not_in_hand", f"Card {card_id} is not in your hand.")
+
+        # Discard the additional card
+        player.hand.pop(card_index)
+        player.discard_pile.append(card)
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "avalanche",
+                "player_id": player.player_id,
+                "effect": "all_discarded_plus_additional",
+                "additional_discarded_card_id": card.card_id,
+            }
+        ]
+
+    def _execute_famine(
+        self, game_state: GameState, player_index: int
+    ) -> List[dict]:
+        """Execute the Famine power: set next sequence denomination to 1.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Famine.
+
+        Returns:
+            List of game events.
+
+        Requirements: 13.2
+        """
+        game_state.current_sequence = 1
+
+        return [
+            {
+                "type": "power_activated",
+                "power_name": "famine",
+                "player_id": game_state.players[player_index].player_id,
+                "effect": "sequence_reset_to_1",
+                "new_sequence": 1,
+            }
+        ]
+
+    def _execute_stampede(
+        self, game_state: GameState, player_index: int
+    ) -> List[dict]:
+        """Execute the Stampede power: all players may play one card of current sequence denomination.
+
+        Each player in turn order (starting from the player after the active player)
+        may play one card matching the current sequence denomination. Only the active
+        player's card power may activate.
+
+        For simplicity, this auto-plays the first matching card found in each player's
+        hand. The active player's card is the one whose power could activate.
+
+        Args:
+            game_state: The current game state (modified in place).
+            player_index: Index of the player activating Stampede.
+
+        Returns:
+            List of game events.
+
+        Requirements: 13.3
+        """
+        current_denom = game_state.current_sequence
+        player_count = len(game_state.players)
+        events = []
+        active_player_card_power = None
+
+        # Process all players in turn order starting from the player after active
+        order = []
+        idx = player_index
+        for _ in range(player_count):
+            idx = (idx + game_state.direction) % player_count
+            if idx == player_index:
+                break
+            order.append(idx)
+        # Active player goes last
+        order.append(player_index)
+
+        for pidx in order:
+            p = game_state.players[pidx]
+            if p.is_decked:
+                continue
+
+            # Find first card matching current sequence denomination
+            matching_card = None
+            matching_index = None
+            for i, c in enumerate(p.hand):
+                if c.denomination == current_denom:
+                    matching_card = c
+                    matching_index = i
+                    break
+
+            if matching_card is not None:
+                # Play the card: move from hand to play pile
+                p.hand.pop(matching_index)
+                p.play_pile.append(matching_card)
+
+                card_event = {
+                    "type": "stampede_card_played",
+                    "player_id": p.player_id,
+                    "card_id": matching_card.card_id,
+                    "card_name": matching_card.card_name,
+                    "denomination": matching_card.denomination,
+                    "power": matching_card.power_text,
+                }
+                events.append(card_event)
+
+                # Only the active player's card power may activate
+                if pidx == player_index:
+                    active_player_card_power = matching_card.power_text.lower().strip()
+
+        # Advance the sequence past the current denomination
+        sequence_cycle = [1, 10, 100, 1000, 10000, 100000]
+        if current_denom in sequence_cycle:
+            idx = sequence_cycle.index(current_denom)
+            game_state.current_sequence = sequence_cycle[(idx + 1) % len(sequence_cycle)]
+
+        # Update last_played_denomination
+        game_state.last_played_denomination = current_denom
+
+        events.insert(0, {
+            "type": "power_activated",
+            "power_name": "stampede",
+            "player_id": game_state.players[player_index].player_id,
+            "effect": "stampede_resolved",
+            "cards_played": len([e for e in events if e.get("type") == "stampede_card_played"]),
+            "active_player_card_power": active_player_card_power,
+            "new_sequence": game_state.current_sequence,
+        })
+
+        return events

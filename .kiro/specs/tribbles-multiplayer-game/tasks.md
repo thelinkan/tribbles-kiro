@@ -271,15 +271,15 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Validates: Requirements 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 12.10, 12.11, 12.12, 12.13**
 
 
-- [ ] 14. Implement Card Powers — Trials and Tribble-ations Expansion
-  - [ ] 14.1 Implement expansion 5 powers
+- [x] 14. Implement Card Powers — Trials and Tribble-ations Expansion
+  - [x] 14.1 Implement expansion 5 powers
     - Implement Avalanche power: if active player has ≥ 4 other cards in hand, all players discard one card, active player discards one additional
     - Implement Famine power: set next sequence denomination to 1 regardless of current position
     - Implement Stampede power: all players may play one card of current sequence denomination in turn order; only active player's card power may activate
     - Implement Time Warp power: at round end, reduce next-round hand size by number of unique Time Warp denominations in play pile (min 1 card dealt), does not stack same denomination
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
 
-  - [ ]* 14.2 Write property tests for expansion 5 powers
+  - [x]* 14.2 Write property tests for expansion 5 powers
     - **Property 54: Avalanche conditional discard**
     - **Property 55: Famine resets sequence to 1**
     - **Property 56: Stampede allows all to play, only active power triggers**

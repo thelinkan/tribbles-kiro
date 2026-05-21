@@ -482,8 +482,8 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Handle `game_end` message: display EndOfGameScreen
     - _Requirements: 8.9, 16.3, 16.4_
 
-- [ ] 27. Implement Client — Settings Screen
-  - [ ] 27.1 Implement SettingsScreen with language selection
+- [x] 27. Implement Client — Settings Screen
+  - [x] 27.1 Implement SettingsScreen with language selection
     - Create `client/scripts/SettingsScreen.gd`
     - Language dropdown: English, Swedish
     - On selection: update TranslationServer locale, persist preference

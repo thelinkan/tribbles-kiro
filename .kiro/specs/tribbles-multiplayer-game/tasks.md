@@ -307,11 +307,11 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - **Property 64: Utilize forces opponent card to play pile and scores**
     - **Validates: Requirements 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7**
 
-- [ ] 16. Checkpoint — All card powers implemented
+- [x] 16. Checkpoint — All card powers implemented
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 17. Implement AI_Controller
-  - [ ] 17.1 Implement computer player decision-making
+- [x] 17. Implement AI_Controller
+  - [x] 17.1 Implement computer player decision-making
     - Create `server/src/ai/controller.py` with `AI_Controller` class
     - Implement `choose_action(game_state, player_id)` — select valid play from hand or draw when no valid play available
     - Strategy: prefer playing cards that advance sequence, activate beneficial powers, target weakest opponent for offensive powers
@@ -319,7 +319,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Used for both permanent computer players and AI_Substitute seats
     - _Requirements: 4.7, 4.8, 21.4, 21.5_
 
-  - [ ]* 17.2 Write property test for AI actions
+  - [x]* 17.2 Write property test for AI actions
     - **Property 14: AI actions are always valid**
     - **Validates: Requirements 4.7, 4.8**
 

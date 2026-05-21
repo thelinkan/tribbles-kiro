@@ -96,7 +96,7 @@ func _get_selected_deck_card_count() -> int:
 	var idx := deck_selector.selected
 	if idx < 0 or idx >= _player_decks.size():
 		return -1
-	return _player_decks[idx].get("card_count", 0)
+	return _player_decks[idx].get("card_count", _player_decks[idx].get("total_card_count", 0))
 
 
 ## Returns the currently selected deck ID, or empty string if none selected.
@@ -166,7 +166,7 @@ func _rebuild_deck_selector() -> void:
 	deck_selector.clear()
 	for deck in _player_decks:
 		var deck_name: String = deck.get("deck_name", "Unnamed")
-		var card_count: int = deck.get("card_count", 0)
+		var card_count: int = deck.get("card_count", deck.get("total_card_count", 0))
 		var suffix := " (%d cards)" % card_count
 		if card_count < MINIMUM_DECK_SIZE:
 			suffix += " ⚠"

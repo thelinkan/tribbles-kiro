@@ -533,7 +533,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Show full card details on hover/tooltip
     - Move the game info panel (round, direction, sequence, spectator count) to the centre of the screen instead of the top, to avoid overlapping with player positions at the top
     - Adjust player position coordinates so all players (including leftmost, rightmost, and topmost) are fully within the visible screen area with padding
-  - [ ] 29.4.2 Integrate PowerResolver with play_card flow
+  - [x] 29.4.2 Integrate PowerResolver with play_card flow
     - After a card with an activatable power is played, server should send a prompt to the client asking activate/decline
     - Client should display the prompt overlay and send the power_choice response
     - Server should then process the power effect and continue the turn (including AI turns)

@@ -46,6 +46,8 @@ signal lobby_response(payload: Dictionary)
 signal deck_response(payload: Dictionary)
 ## Emitted for card catalogue responses.
 signal card_response(payload: Dictionary)
+## Emitted when the server returns an action_result with game events.
+signal action_result_received(payload: Dictionary)
 
 # ─── Configuration ──────────────────────────────────────────────────────────────
 ## Maximum number of reconnection attempts before giving up.
@@ -275,5 +277,7 @@ func _handle_message(text: String) -> void:
 			deck_response.emit(payload)
 		"card_response":
 			card_response.emit(payload)
+		"action_result":
+			action_result_received.emit(payload)
 		_:
 			push_warning("NetworkClient: Unknown message type '%s'" % msg_type)

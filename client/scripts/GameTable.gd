@@ -95,6 +95,7 @@ func _ready() -> void:
 	# Connect network signals.
 	NetworkClient.game_state_update.connect(_on_game_state_update)
 	NetworkClient.prompt_received.connect(_on_prompt_received)
+	NetworkClient.action_result_received.connect(_on_action_result_received)
 	NetworkClient.disconnect_notify.connect(_on_disconnect_notify)
 	NetworkClient.reconnect_notify.connect(_on_reconnect_notify)
 	NetworkClient.spectator_count_update.connect(_on_spectator_count_update)
@@ -124,6 +125,340 @@ func _on_game_state_update(payload: Dictionary) -> void:
 	_update_player_positions()
 	_update_hand_display()
 	_update_turn_state()
+
+
+## Handle action_result messages — check for power_prompt events and show prompts.
+## Also requests a fresh game state update after processing events.
+func _on_action_result_received(payload: Dictionary) -> void:
+	var events: Array = payload.get("events", [])
+
+	for event in events:
+		if not event is Dictionary:
+			continue
+		var event_type: String = event.get("type", "")
+
+		if event_type == "power_prompt":
+			_handle_power_prompt_event(event)
+			return  # Don't request state update yet — waiting for player choice
+
+		if event_type == "draw_choice_pending":
+			_handle_draw_choice_event(event)
+			return
+
+		if event_type == "draw_accept_pending":
+			_handle_draw_accept_event(event)
+			return
+
+	# No prompt pending — request updated game state
+	NetworkClient.send_message("get_game_state", {"game_id": NetworkClient.current_game_id})
+
+
+## Handle a power_prompt event from action_result — show appropriate prompt overlay.
+func _handle_power_prompt_event(event: Dictionary) -> void:
+	var prompt_type: String = event.get("prompt_type", "")
+	var power_name: String = event.get("power_name", "")
+	var message: String = event.get("message", "")
+	var options: Array = event.get("options", [])
+
+	match prompt_type:
+		"activate_or_decline":
+			_show_activate_decline_prompt(power_name, message)
+		"choose_target_player":
+			_show_target_player_prompt(power_name, message, options)
+		"choose_card_from_hand":
+			_show_card_from_hand_prompt(power_name, message, options)
+		"choose_card_from_discard":
+			_show_card_from_discard_prompt(power_name, message, options)
+		"choose_card_from_play_pile":
+			_show_card_from_play_pile_prompt(power_name, message, options)
+		"choose_cards_from_hand":
+			_show_multi_card_prompt(power_name, message, options, event.get("count", 2))
+		"choose_power_to_freeze":
+			_show_freeze_power_prompt(power_name, message, options)
+		"choose_revealed_card":
+			_show_revealed_card_prompt(power_name, message, event.get("revealed_cards", []))
+		"scan_reorder":
+			_show_scan_prompt(power_name, message, event.get("revealed_cards", []))
+		_:
+			_show_generic_power_prompt(power_name, message, options)
+
+
+## Show activate/decline prompt for a power.
+func _show_activate_decline_prompt(power_name: String, message: String) -> void:
+	prompt_title.text = message
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	var activate_btn := Button.new()
+	activate_btn.text = "%s %s" % [tr("UI_GAME_ACTIVATE_POWER"), power_name.capitalize()]
+	activate_btn.pressed.connect(_on_power_choice_selected.bind("activate"))
+	prompt_options.add_child(activate_btn)
+
+	var decline_btn := Button.new()
+	decline_btn.text = tr("UI_GAME_DECLINE_POWER")
+	decline_btn.pressed.connect(_on_power_choice_selected.bind("decline"))
+	prompt_options.add_child(decline_btn)
+
+	prompt_overlay.visible = true
+
+
+## Show target player selection prompt.
+func _show_target_player_prompt(power_name: String, message: String, target_indices: Array) -> void:
+	prompt_title.text = message
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	var players: Array = _game_state.get("players", [])
+	for target_index in target_indices:
+		var idx: int = int(target_index)
+		if idx >= 0 and idx < players.size():
+			var player_data: Dictionary = players[idx]
+			var username: String = player_data.get("username", "Player %d" % idx)
+			var btn := Button.new()
+			btn.text = username
+			btn.pressed.connect(_on_power_target_selected.bind(str(idx)))
+			prompt_options.add_child(btn)
+
+	prompt_overlay.visible = true
+
+
+## Show card selection from hand prompt.
+func _show_card_from_hand_prompt(power_name: String, message: String, card_ids: Array) -> void:
+	prompt_title.text = message
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	var hand: Array = _game_state.get("hand", [])
+	for card_id in card_ids:
+		var cid: int = int(card_id)
+		# Find card data in hand
+		var card_text: String = "Card %d" % cid
+		for card_data in hand:
+			if card_data is Dictionary and int(card_data.get("card_id", 0)) == cid:
+				card_text = _format_card_short(card_data)
+				break
+		var btn := Button.new()
+		btn.text = card_text
+		btn.pressed.connect(_on_power_card_selected.bind(str(cid)))
+		prompt_options.add_child(btn)
+
+	prompt_overlay.visible = true
+
+
+## Show card selection from discard pile prompt.
+func _show_card_from_discard_prompt(power_name: String, message: String, card_ids: Array) -> void:
+	prompt_title.text = message
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	for card_id in card_ids:
+		var cid: int = int(card_id)
+		var btn := Button.new()
+		btn.text = "Card %d" % cid
+		btn.pressed.connect(_on_power_card_selected.bind(str(cid)))
+		prompt_options.add_child(btn)
+
+	prompt_overlay.visible = true
+
+
+## Show card selection from play pile prompt.
+func _show_card_from_play_pile_prompt(power_name: String, message: String, card_ids: Array) -> void:
+	prompt_title.text = message
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	for card_id in card_ids:
+		var cid: int = int(card_id)
+		var btn := Button.new()
+		btn.text = "Card %d" % cid
+		btn.pressed.connect(_on_power_card_selected.bind(str(cid)))
+		prompt_options.add_child(btn)
+
+	prompt_overlay.visible = true
+
+
+## Show multi-card selection prompt (e.g., Process power — choose 2 cards).
+func _show_multi_card_prompt(power_name: String, message: String, card_ids: Array, count: int) -> void:
+	prompt_title.text = "%s (choose %d)" % [message, count]
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	# For simplicity, show cards as individual buttons; player picks one at a time.
+	# A more advanced UI would allow multi-select, but for now we handle sequentially.
+	var hand: Array = _game_state.get("hand", [])
+	for card_id in card_ids:
+		var cid: int = int(card_id)
+		var card_text: String = "Card %d" % cid
+		for card_data in hand:
+			if card_data is Dictionary and int(card_data.get("card_id", 0)) == cid:
+				card_text = _format_card_short(card_data)
+				break
+		var btn := Button.new()
+		btn.text = card_text
+		btn.pressed.connect(_on_power_card_selected.bind(str(cid)))
+		prompt_options.add_child(btn)
+
+	prompt_overlay.visible = true
+
+
+## Show freeze power selection prompt.
+func _show_freeze_power_prompt(power_name: String, message: String, power_options: Array) -> void:
+	prompt_title.text = message
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	for power_opt in power_options:
+		var btn := Button.new()
+		btn.text = str(power_opt).capitalize()
+		btn.pressed.connect(_on_power_choice_selected.bind(str(power_opt)))
+		prompt_options.add_child(btn)
+
+	prompt_overlay.visible = true
+
+
+## Show revealed card selection prompt (Toxin power).
+func _show_revealed_card_prompt(power_name: String, message: String, revealed_cards: Array) -> void:
+	prompt_title.text = message
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	for card_info in revealed_cards:
+		if not card_info is Dictionary:
+			continue
+		var card_id: int = int(card_info.get("card_id", 0))
+		var denom: int = int(card_info.get("denomination", 0))
+		var btn := Button.new()
+		btn.text = "%s (%d pts)" % [DENOMINATION_NAMES.get(denom, str(denom)), denom]
+		btn.pressed.connect(_on_power_card_selected.bind(str(card_id)))
+		prompt_options.add_child(btn)
+
+	prompt_overlay.visible = true
+
+
+## Show scan reorder prompt.
+func _show_scan_prompt(power_name: String, message: String, revealed_cards: Array) -> void:
+	prompt_title.text = message
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	# Simplified: show Top/Bottom placement options
+	var top_btn := Button.new()
+	top_btn.text = tr("UI_GAME_PLACE_TOP") if TranslationServer.get_locale() != "" else "Place on Top"
+	top_btn.pressed.connect(_on_power_choice_selected.bind("top"))
+	prompt_options.add_child(top_btn)
+
+	var bottom_btn := Button.new()
+	bottom_btn.text = tr("UI_GAME_PLACE_BOTTOM") if TranslationServer.get_locale() != "" else "Place on Bottom"
+	bottom_btn.pressed.connect(_on_power_choice_selected.bind("bottom"))
+	prompt_options.add_child(bottom_btn)
+
+	prompt_overlay.visible = true
+
+
+## Show a generic power prompt with options.
+func _show_generic_power_prompt(power_name: String, message: String, options: Array) -> void:
+	prompt_title.text = message
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	for option in options:
+		var btn := Button.new()
+		btn.text = str(option)
+		btn.pressed.connect(_on_power_choice_selected.bind(str(option)))
+		prompt_options.add_child(btn)
+
+	prompt_overlay.visible = true
+
+
+## Called when a power activate/decline or simple choice is selected.
+func _on_power_choice_selected(value: String) -> void:
+	NetworkClient.send_message("power_choice", {
+		"game_id": NetworkClient.current_game_id,
+		"choice_type": "option",
+		"value": value,
+	})
+	prompt_overlay.visible = false
+
+
+## Called when a target player is selected for a power.
+func _on_power_target_selected(target_index: String) -> void:
+	NetworkClient.send_message("power_choice", {
+		"game_id": NetworkClient.current_game_id,
+		"choice_type": "target_player",
+		"value": target_index,
+	})
+	prompt_overlay.visible = false
+
+
+## Called when a card is selected for a power (from hand, discard, play pile, or revealed).
+func _on_power_card_selected(card_id: String) -> void:
+	NetworkClient.send_message("power_choice", {
+		"game_id": NetworkClient.current_game_id,
+		"choice_type": "card_selection",
+		"value": card_id,
+	})
+	prompt_overlay.visible = false
+
+
+## Handle draw_choice_pending event — show play/keep choice for matching draw.
+func _handle_draw_choice_event(event: Dictionary) -> void:
+	var card_id: int = int(event.get("card_id", 0))
+	var denomination: int = int(event.get("denomination", 0))
+	var denom_str: String = DENOMINATION_NAMES.get(denomination, str(denomination))
+
+	prompt_title.text = "%s %s - %s" % [tr("UI_GAME_DRAWN_CARD"), denom_str, event.get("message", "Play or keep?")]
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	var play_btn := Button.new()
+	play_btn.text = tr("UI_GAME_PLAY_CARD")
+	play_btn.pressed.connect(_on_draw_play_choice.bind(card_id))
+	prompt_options.add_child(play_btn)
+
+	var keep_btn := Button.new()
+	keep_btn.text = tr("UI_GAME_ACCEPT_DRAW")
+	keep_btn.pressed.connect(_on_draw_keep_choice)
+	prompt_options.add_child(keep_btn)
+
+	prompt_overlay.visible = true
+
+
+## Handle draw_accept_pending event — show drawn card with Accept button.
+func _handle_draw_accept_event(event: Dictionary) -> void:
+	var card_id: int = int(event.get("card_id", 0))
+	var denomination: int = int(event.get("denomination", 0))
+	var denom_str: String = DENOMINATION_NAMES.get(denomination, str(denomination))
+
+	drawn_card_label.text = "%s: %s" % [tr("UI_GAME_DRAWN_CARD"), denom_str]
+	drawn_card_label.visible = true
+	accept_button.visible = true
+
+
+## Called when player chooses to play the drawn matching card.
+func _on_draw_play_choice(card_id: int) -> void:
+	NetworkClient.send_message("play_card", {
+		"game_id": NetworkClient.current_game_id,
+		"card_id": card_id,
+		"activate_power": true,
+	})
+	prompt_overlay.visible = false
+
+
+## Called when player chooses to keep the drawn card (pass).
+func _on_draw_keep_choice() -> void:
+	NetworkClient.send_message("accept_draw", {"game_id": NetworkClient.current_game_id})
+	prompt_overlay.visible = false
 
 
 ## Update the central game info panel (sequence, direction, round, spectators).

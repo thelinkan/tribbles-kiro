@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Union
 
 from models import CardInstance, GameState, PendingDraw, PlayerState
+from game.powers.resolver import PowerResolver
 
 
 @dataclass
@@ -58,6 +59,7 @@ class GameEngine:
     def __init__(self):
         """Initialise the game engine."""
         self._games: Dict[str, GameState] = {}
+        self._power_resolver = PowerResolver()
 
     def _advance_sequence(self, current: int) -> int:
         """Advance the sequence to the next denomination in the cycle.
@@ -272,6 +274,18 @@ class GameEngine:
 
         action_type = action.get("type")
 
+        # Handle power_choice action (response to a power prompt)
+        if action_type == "power_choice":
+            return self._handle_power_choice(state, player_index, action)
+
+        # If there's a pending power for this player, they must resolve it first
+        if state.pending_power is not None and state.pending_power.player_index == player_index:
+            if action_type != "power_choice":
+                return (
+                    "pending_power",
+                    "You must resolve the pending power prompt before taking another action.",
+                )
+
         # Handle accept_draw action (can come from the player with a pending draw)
         if action_type == "accept_draw":
             return self._handle_accept_draw(state, player_index)
@@ -370,7 +384,19 @@ class GameEngine:
             }
         ]
 
-        # Advance turn to next player
+        # Check if the card has an activatable power (Requirement 9.1)
+        activate_power = action.get("activate_power", True)
+        if activate_power:
+            power_prompt_events = self._power_resolver.create_power_prompt(
+                state, player_index, card
+            )
+            if power_prompt_events is not None:
+                # Power prompt created — do NOT advance turn yet.
+                # The turn will advance after the power is resolved or declined.
+                events.extend(power_prompt_events)
+                return events
+
+        # No power to activate — advance turn to next player
         self._advance_turn(state)
         events.append(
             {
@@ -610,6 +636,124 @@ class GameEngine:
                 "next_player_id": state.players[state.current_player_index].player_id,
             }
         )
+
+        return events
+
+    def _handle_power_choice(
+        self, state: GameState, player_index: int, action: dict
+    ) -> Union[List[dict], Tuple[str, str]]:
+        """Handle a power_choice action — player responding to a power prompt.
+
+        Delegates to the PowerResolver to process the choice. After the power
+        is fully resolved (no more pending prompts), advances the turn.
+
+        Args:
+            state: The current game state.
+            player_index: Index of the player making the choice.
+            action: The action dict containing choice details (choice, card_id,
+                target_player_index, value, etc.).
+
+        Returns:
+            List of game events on success, or error tuple on failure.
+
+        Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7
+        """
+        if state.pending_power is None:
+            return ("no_pending_power", "No pending power to resolve.")
+
+        if state.pending_power.player_index != player_index:
+            return ("not_your_power", "This pending power is not yours to resolve.")
+
+        # Build the choice dict from the action payload
+        choice = {}
+        # Map from the protocol format to what PowerResolver expects
+        if "choice" in action:
+            choice["choice"] = action["choice"]
+        elif "value" in action:
+            # Client sends {choice_type: "option", value: "activate"/"decline"}
+            value = action["value"]
+            if value in ("activate", "decline"):
+                choice["choice"] = value
+            else:
+                # For target selection, try to interpret the value
+                choice["choice"] = "activate"
+                # Try to parse as integer (player index or card id)
+                try:
+                    int_value = int(value)
+                    # Determine what kind of target based on the pending power phase
+                    if state.pending_power.phase == "choose_target":
+                        power_name = state.pending_power.power_name
+                        from game.powers.resolver import POWERS_NEEDING_TARGET
+                        # Powers that need a player target
+                        player_target_powers = {
+                            "poison", "copy", "draw", "kill", "recycle",
+                            "score", "battle", "assimilate", "utilize",
+                        }
+                        card_choice_powers = {
+                            "discard", "rescue", "cycle", "exchange",
+                            "replay", "process", "avalanche",
+                        }
+                        if power_name in player_target_powers:
+                            choice["target_player_index"] = int_value
+                        elif power_name in card_choice_powers:
+                            choice["card_id"] = int_value
+                        elif power_name == "freeze":
+                            choice["power_to_freeze"] = value
+                        elif power_name == "scan":
+                            choice["order"] = action.get("order", [])
+                            choice["placement"] = value
+                        elif power_name == "toxin":
+                            choice["card_id"] = int_value
+                        else:
+                            choice["value"] = value
+                except (ValueError, TypeError):
+                    # Non-integer value — could be a power name for Freeze
+                    if state.pending_power.power_name == "freeze":
+                        choice["choice"] = "activate"
+                        choice["power_to_freeze"] = value
+                    else:
+                        choice["value"] = value
+
+        # Copy additional fields that might be needed
+        for key in ("card_id", "target_player_index", "play_immediately",
+                    "power_to_freeze", "order", "placement", "card_ids"):
+            if key in action and key not in choice:
+                choice[key] = action[key]
+
+        # Delegate to PowerResolver
+        result = self._power_resolver.handle_power_choice(state, player_index, choice)
+
+        if isinstance(result, tuple):
+            return result
+
+        events = result
+
+        # Check if the power is fully resolved (no more pending power)
+        if state.pending_power is None:
+            # Power fully resolved — advance the turn
+            # But check if Go power was activated (player keeps their turn)
+            go_activated = any(
+                e.get("type") == "power_activated" and e.get("power_name") == "go"
+                for e in events
+            )
+            skip_activated = any(
+                e.get("type") == "power_activated" and e.get("power_name") == "skip"
+                for e in events
+            )
+
+            if not go_activated and not skip_activated:
+                # Normal turn advance
+                self._advance_turn(state)
+                events.append(
+                    {
+                        "type": "turn_advanced",
+                        "next_player_id": state.players[
+                            state.current_player_index
+                        ].player_id,
+                    }
+                )
+            # For Go: current_player_index was already set by the power
+            # For Skip: current_player_index was already set by the power
 
         return events
 

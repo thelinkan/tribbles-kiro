@@ -636,9 +636,13 @@ class MessageHandler:
         if isinstance(result, tuple):
             return error_message(result[0], result[1])
 
-        # Process AI turns if it's now an AI player's turn
-        ai_events = self._process_ai_turns(game_id)
-        result.extend(ai_events)
+        # Check if there's a power_prompt in the events (pending power for this player)
+        has_power_prompt = any(e.get("type") == "power_prompt" for e in result)
+
+        if not has_power_prompt:
+            # No power prompt — process AI turns if it's now an AI player's turn
+            ai_events = self._process_ai_turns(game_id)
+            result.extend(ai_events)
 
         return encode_message("action_result", {"events": result})
 
@@ -700,6 +704,14 @@ class MessageHandler:
         result = self._game_engine.process_action(game_id, player_id, action)
         if isinstance(result, tuple):
             return error_message(result[0], result[1])
+
+        # Check if there's still a pending power prompt (multi-step powers)
+        has_power_prompt = any(e.get("type") == "power_prompt" for e in result)
+
+        if not has_power_prompt:
+            # Power fully resolved — process AI turns if it's now an AI player's turn
+            ai_events = self._process_ai_turns(game_id)
+            result.extend(ai_events)
 
         return encode_message("action_result", {"events": result})
 
@@ -831,6 +843,9 @@ class MessageHandler:
         it's a human player's turn, the game ends, or max_turns is reached
         (safety limit to prevent infinite loops).
 
+        Also handles AI power choices: when an AI plays a card with a power,
+        it automatically resolves the power prompt.
+
         Args:
             game_id: The game session ID.
             max_turns: Maximum AI turns to process (safety limit).
@@ -854,6 +869,20 @@ class MessageHandler:
             if not current_player.is_computer:
                 break
 
+            # Check if there's a pending power for this AI player
+            if game_state.pending_power is not None:
+                if game_state.pending_power.player_index == game_state.current_player_index:
+                    # AI resolves the power
+                    power_events = self._resolve_ai_power(game_id, game_state, ai)
+                    all_events.extend(power_events)
+                    # After resolving, check if game ended or it's now a human's turn
+                    if game_state.game_status != "active":
+                        break
+                    continue
+                else:
+                    # Pending power for a different player — shouldn't happen, break
+                    break
+
             # AI chooses an action
             action = ai.choose_action(game_state, current_player.player_id)
 
@@ -870,12 +899,168 @@ class MessageHandler:
             if game_state.game_status != "active":
                 break
 
+            # Check if a power prompt was created for this AI player
+            if game_state.pending_power is not None and game_state.pending_power.player_index == game_state.players.index(current_player):
+                # AI resolves the power immediately
+                power_events = self._resolve_ai_power(game_id, game_state, ai)
+                all_events.extend(power_events)
+                if game_state.game_status != "active":
+                    break
+                continue
+
             # Handle pending draw for AI (accept or play)
             if game_state.pending_draw and game_state.pending_draw.player_id == current_player.player_id:
                 follow_up = ai.choose_action(game_state, current_player.player_id)
                 result2 = self._game_engine.process_action(game_id, current_player.player_id, follow_up)
                 if isinstance(result2, list):
                     all_events.extend(result2)
+
+        return all_events
+
+    def _resolve_ai_power(self, game_id: str, game_state, ai) -> list:
+        """Resolve a pending power prompt for an AI player.
+
+        The AI will always activate powers and make reasonable target choices.
+
+        Args:
+            game_id: The game session ID.
+            game_state: The current game state.
+            ai: The AIController instance.
+
+        Returns:
+            A list of game events from power resolution.
+        """
+        all_events = []
+        max_steps = 10  # Safety limit for multi-step powers
+
+        for _ in range(max_steps):
+            if game_state.pending_power is None:
+                break
+
+            pending = game_state.pending_power
+            player_index = pending.player_index
+            player = game_state.players[player_index]
+
+            # Build the AI's power choice
+            choice_action = {"type": "power_choice"}
+
+            if pending.phase == "activate_or_decline":
+                # AI always activates powers
+                choice_action["choice"] = "activate"
+            elif pending.phase == "choose_target":
+                choice_action["choice"] = "activate"
+                power_name = pending.power_name
+
+                # Make a reasonable target choice based on the power type
+                player_target_powers = {
+                    "poison", "copy", "draw", "kill", "recycle",
+                    "score", "battle", "assimilate", "utilize",
+                }
+                card_from_hand_powers = {"discard", "cycle", "exchange", "avalanche"}
+                card_from_discard_powers = {"rescue"}
+                card_from_play_pile_powers = {"replay"}
+
+                if power_name in player_target_powers:
+                    # Choose a valid target player (first available opponent)
+                    for i, p in enumerate(game_state.players):
+                        if i != player_index:
+                            # Basic validity check based on power
+                            if power_name == "poison" and len(p.draw_deck) > 0:
+                                choice_action["target_player_index"] = i
+                                break
+                            elif power_name == "copy" and len(p.play_pile) > 0:
+                                choice_action["target_player_index"] = i
+                                break
+                            elif power_name == "draw" and len(p.draw_deck) > 0:
+                                choice_action["target_player_index"] = i
+                                break
+                            elif power_name == "kill" and len(p.play_pile) > 0:
+                                choice_action["target_player_index"] = i
+                                break
+                            elif power_name == "recycle" and len(p.discard_pile) > 0:
+                                choice_action["target_player_index"] = i
+                                break
+                            elif power_name == "score":
+                                choice_action["target_player_index"] = i
+                                break
+                            elif power_name == "battle" and len(p.draw_deck) >= 3:
+                                choice_action["target_player_index"] = i
+                                break
+                            elif power_name == "assimilate" and len(p.draw_deck) > 0:
+                                choice_action["target_player_index"] = i
+                                break
+                            elif power_name == "utilize" and len(p.hand) >= 2:
+                                choice_action["target_player_index"] = i
+                                break
+                    # If no valid target found, decline
+                    if "target_player_index" not in choice_action:
+                        choice_action["choice"] = "decline"
+
+                elif power_name in card_from_hand_powers:
+                    # Choose the first card from hand
+                    if player.hand:
+                        choice_action["card_id"] = player.hand[0].card_id
+                    else:
+                        choice_action["choice"] = "decline"
+
+                elif power_name in card_from_discard_powers:
+                    # Choose the first card from discard pile
+                    if player.discard_pile:
+                        choice_action["card_id"] = player.discard_pile[0].card_id
+                    else:
+                        choice_action["choice"] = "decline"
+
+                elif power_name in card_from_play_pile_powers:
+                    # Choose the first card from play pile
+                    if player.play_pile:
+                        choice_action["card_id"] = player.play_pile[0].card_id
+                    else:
+                        choice_action["choice"] = "decline"
+
+                elif power_name == "freeze":
+                    # Freeze a common power
+                    choice_action["power_to_freeze"] = "go"
+
+                elif power_name == "process":
+                    # Choose first 2 cards from hand to place under draw deck
+                    if len(player.hand) >= 2:
+                        choice_action["card_ids"] = [player.hand[0].card_id, player.hand[1].card_id]
+                    elif player.hand:
+                        choice_action["card_ids"] = [player.hand[0].card_id]
+                    else:
+                        choice_action["choice"] = "decline"
+
+                elif power_name == "scan":
+                    # Place cards on top in current order
+                    choice_action["placement"] = "top"
+                    choice_action["order"] = []
+
+                elif power_name == "toxin":
+                    # Choose the first revealed card
+                    if hasattr(pending, 'toxin_revealed') and pending.toxin_revealed:
+                        choice_action["card_id"] = pending.toxin_revealed[0][1].card_id
+                    else:
+                        choice_action["choice"] = "decline"
+
+                else:
+                    # Unknown power — decline
+                    choice_action["choice"] = "decline"
+
+            # Process the power choice through the engine
+            result = self._game_engine.process_action(
+                game_id, player.player_id, choice_action
+            )
+            if isinstance(result, list):
+                all_events.extend(result)
+            else:
+                # Power choice failed — log and break
+                logger.warning(
+                    "AI power choice failed for player %d: %s",
+                    player.player_id, result
+                )
+                # Force clear the pending power to avoid infinite loop
+                game_state.pending_power = None
+                break
 
         return all_events
 

@@ -17,7 +17,7 @@ from models import CardInstance, GameState, PlayerState
 from scoring.service import ScoreService
 
 
-def make_card(card_id: int, denomination: int = 1, power: str = "Go") -> CardInstance:
+def make_card(card_id: int, denomination: int = 1, power: str = "Bonus") -> CardInstance:
     """Helper to create a CardInstance for testing."""
     return CardInstance(
         card_id=card_id,

@@ -81,6 +81,9 @@ class PowerResolver:
     def get_activatable_power(self, card: CardInstance) -> Optional[str]:
         """Extract the activatable power name from a card, if any.
 
+        Extracts the power name from the card_name field (pattern: "Tribble - PowerName")
+        or falls back to checking if the power_text starts with a known power name.
+
         For compound powers (e.g., "Clone & Reverse"), returns the non-Clone
         component if one exists. Clone itself has no activation effect.
 
@@ -95,17 +98,20 @@ class PowerResolver:
             or a compound string "power1&power2" if both must activate,
             or None if it has no activatable power.
         """
-        power_text = card.power_text.lower().strip()
+        # Extract power name from card_name (e.g., "Tribble - Skip" → "skip")
+        # Also handles compound names like "Tribble - Clone & Reverse"
+        power_name = self._extract_power_name(card)
+        if power_name is None:
+            return None
 
         # Handle compound powers (e.g., "clone & reverse")
-        if "&" in power_text:
-            parts = [p.strip() for p in power_text.split("&")]
+        if "&" in power_name:
+            parts = [p.strip() for p in power_name.split("&")]
             has_clone = "clone" in parts
             activatable_parts = [p for p in parts if p in ACTIVATABLE_POWERS]
 
             if has_clone:
                 # If one is Clone: only the non-Clone power activates independently
-                # (Clone usage is determined by _is_valid_play in GameEngine)
                 non_clone_parts = [p for p in activatable_parts if p != "clone"]
                 if non_clone_parts:
                     return non_clone_parts[0]
@@ -119,8 +125,51 @@ class PowerResolver:
                 return None
 
         # Simple power
-        if power_text in ACTIVATABLE_POWERS:
-            return power_text
+        if power_name in ACTIVATABLE_POWERS:
+            return power_name
+
+        return None
+
+    def _extract_power_name(self, card: CardInstance) -> Optional[str]:
+        """Extract the power name from a card's card_name or power_text.
+
+        Tries the card_name first (pattern: "Tribble - PowerName" or
+        "Tribble - Power1 & Power2"), then falls back to checking if the
+        first word of power_text matches a known power.
+
+        Args:
+            card: The card to extract the power name from.
+
+        Returns:
+            The power name in lowercase, or None if not found.
+        """
+        # Try extracting from card_name (e.g., "Tribble - Skip" → "skip")
+        card_name = card.card_name or ""
+        if " - " in card_name:
+            power_part = card_name.split(" - ", 1)[1].strip().lower()
+            # Check if it's a known power or compound
+            if "&" in power_part:
+                # Compound: "clone & reverse" → check parts
+                parts = [p.strip() for p in power_part.split("&")]
+                if any(p in ACTIVATABLE_POWERS or p in PASSIVE_POWERS for p in parts):
+                    return power_part
+            elif power_part in ACTIVATABLE_POWERS or power_part in PASSIVE_POWERS:
+                return power_part
+
+        # Fallback: check if power_text starts with or contains a known power name
+        power_text = (card.power_text or "").lower().strip()
+        if not power_text:
+            return None
+
+        # Check first word
+        first_word = power_text.split()[0].rstrip(".:,;") if power_text else ""
+        if first_word in ACTIVATABLE_POWERS:
+            return first_word
+
+        # Check if any known power name appears at the start of power_text
+        for power in ACTIVATABLE_POWERS:
+            if power_text.startswith(power):
+                return power
 
         return None
 
@@ -133,10 +182,10 @@ class PowerResolver:
         Returns:
             A list of power names if compound, or None if not compound.
         """
-        power_text = card.power_text.lower().strip()
-        if "&" not in power_text:
+        power_name = self._extract_power_name(card)
+        if power_name is None or "&" not in power_name:
             return None
-        parts = [p.strip() for p in power_text.split("&")]
+        parts = [p.strip() for p in power_name.split("&")]
         return [p for p in parts if p in ACTIVATABLE_POWERS]
 
     def create_power_prompt(

@@ -129,7 +129,6 @@ func _on_game_state_update(payload: Dictionary) -> void:
 
 ## Handle action_result messages — check for power_prompt events and show prompts.
 ## Also requests a fresh game state update after processing events.
-## Only shows prompts that are addressed to the local player (ignores AI prompts).
 func _on_action_result_received(payload: Dictionary) -> void:
 	var events: Array = payload.get("events", [])
 
@@ -139,29 +138,18 @@ func _on_action_result_received(payload: Dictionary) -> void:
 		var event_type: String = event.get("type", "")
 
 		if event_type == "power_prompt":
-			# Only show prompts addressed to the local player (ignore AI prompts).
-			var prompt_player_id: int = int(event.get("player_id", -1))
-			if prompt_player_id == _local_player_id:
-				_handle_power_prompt_event(event)
-				return  # Don't request state update yet — waiting for player choice
-			# Otherwise skip this AI prompt event and continue checking.
-			continue
+			_handle_power_prompt_event(event)
+			return  # Don't request state update yet — waiting for player choice
 
 		if event_type == "draw_choice_pending":
-			var draw_player_id: int = int(event.get("player_id", -1))
-			if draw_player_id == _local_player_id:
-				_handle_draw_choice_event(event)
-				return
-			continue
+			_handle_draw_choice_event(event)
+			return
 
 		if event_type == "draw_accept_pending":
-			var draw_player_id: int = int(event.get("player_id", -1))
-			if draw_player_id == _local_player_id:
-				_handle_draw_accept_event(event)
-				return
-			continue
+			_handle_draw_accept_event(event)
+			return
 
-	# No prompt pending for local player — request updated game state
+	# No prompt pending — request updated game state
 	NetworkClient.send_message("get_game_state", {"game_id": NetworkClient.current_game_id})
 
 

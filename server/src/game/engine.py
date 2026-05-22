@@ -166,13 +166,18 @@ class GameEngine:
     def _is_clone_card(self, card: CardInstance) -> bool:
         """Check if a card has the Clone power (including compound powers with Clone).
 
+        Checks both the card_name (e.g., "Tribble - Clone") and the power_text.
+
         Args:
             card: The card to check.
 
         Returns:
             True if the card has Clone as its power or as part of a compound power.
         """
-        power = card.power_text.lower()
+        card_name = (card.card_name or "").lower()
+        if "clone" in card_name:
+            return True
+        power = (card.power_text or "").lower()
         return "clone" in power
 
     def _is_valid_play(self, card: CardInstance, state: GameState) -> bool:
@@ -216,6 +221,8 @@ class GameEngine:
     def _is_advance_card(self, card: CardInstance) -> bool:
         """Check if a card has the Advance power.
 
+        Checks both the card_name (e.g., "Tribble - Advance") and the power_text.
+
         Args:
             card: The card to check.
 
@@ -224,7 +231,10 @@ class GameEngine:
 
         Requirements: 14.1
         """
-        power = card.power_text.lower()
+        card_name = (card.card_name or "").lower()
+        if "advance" in card_name:
+            return True
+        power = (card.power_text or "").lower()
         return "advance" in power
 
     def process_action(

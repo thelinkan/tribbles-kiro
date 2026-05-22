@@ -64,6 +64,11 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Join Game"
 
+[node name="StartButton" type="Button" parent="MarginContainer/VBoxContainer/HSplitContainer/WaitingPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Start Game"
+
 [node name="ActivePanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer"]
 layout_mode = 2
 size_flags_horizontal = 3

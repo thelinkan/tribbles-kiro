@@ -20,6 +20,7 @@ const MAX_PLAYER_COUNT: int = 8
 @onready var player_count_spin: SpinBox = %PlayerCountSpin
 @onready var create_button: Button = %CreateButton
 @onready var join_button: Button = %JoinButton
+@onready var start_button: Button = %StartButton
 @onready var watch_button: Button = %WatchButton
 @onready var back_button: Button = %BackButton
 @onready var error_label: Label = %ErrorLabel
@@ -57,6 +58,7 @@ func _ready() -> void:
 	# Connect UI signals.
 	create_button.pressed.connect(_on_create_pressed)
 	join_button.pressed.connect(_on_join_pressed)
+	start_button.pressed.connect(_on_start_pressed)
 	watch_button.pressed.connect(_on_watch_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	deck_selector.item_selected.connect(_on_deck_selected)
@@ -70,6 +72,7 @@ func _ready() -> void:
 	error_label.visible = false
 	session_details_label.text = ""
 	join_button.disabled = true
+	start_button.disabled = true
 	watch_button.disabled = true
 
 	# Request game lists and player decks from server.
@@ -129,10 +132,10 @@ func _rebuild_waiting_games_ui() -> void:
 	for session in _waiting_sessions:
 		var session_id: String = str(session.get("session_id", ""))
 		var player_count: int = session.get("player_count", 0)
-		var players_joined: int = session.get("players_joined", 0)
+		var players_joined: int = session.get("current_player_count", 0)
 
 		var btn := Button.new()
-		btn.text = "%s — %d/%d players" % [session_id, players_joined, player_count]
+		btn.text = "%s — %d/%d players" % [session_id.left(8), players_joined, player_count]
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		btn.pressed.connect(_on_waiting_session_selected.bind(session_id, session))
 		waiting_games_list.add_child(btn)
@@ -152,10 +155,10 @@ func _rebuild_active_games_ui() -> void:
 	for session in _active_sessions:
 		var session_id: String = str(session.get("session_id", ""))
 		var player_count: int = session.get("player_count", 0)
-		var players_joined: int = session.get("players_joined", 0)
+		var players_joined: int = session.get("current_player_count", 0)
 
 		var btn := Button.new()
-		btn.text = "%s — %d/%d players" % [session_id, players_joined, player_count]
+		btn.text = "%s — %d/%d players" % [session_id.left(8), players_joined, player_count]
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		btn.pressed.connect(_on_active_session_selected.bind(session_id, session))
 		active_games_list.add_child(btn)
@@ -193,6 +196,7 @@ func _on_waiting_session_selected(session_id: String, session: Dictionary) -> vo
 	_selected_waiting_session_id = session_id
 	_selected_active_session_id = ""
 	join_button.disabled = false
+	start_button.disabled = false
 	watch_button.disabled = true
 	_show_session_details(session)
 
@@ -231,6 +235,19 @@ func _on_create_pressed() -> void:
 	NetworkClient.send_message("create_game", {
 		"deck_id": deck_id,
 		"player_count": player_count,
+	})
+
+
+## Start Game: send start_game message for selected waiting session.
+func _on_start_pressed() -> void:
+	error_label.visible = false
+
+	if _selected_waiting_session_id == "":
+		_show_error("Select a waiting game to start.")
+		return
+
+	NetworkClient.send_message("start_game", {
+		"session_id": _selected_waiting_session_id,
 	})
 
 
@@ -299,9 +316,11 @@ func _on_lobby_response(payload: Dictionary) -> void:
 			_request_game_lists()
 		"game_joined":
 			# Navigate to game table when successfully joined.
+			NetworkClient.current_game_id = payload.get("session_id", _selected_waiting_session_id)
 			get_tree().change_scene_to_file("res://scenes/GameTable.tscn")
 		"game_started":
 			# Navigate to game table when game starts.
+			NetworkClient.current_game_id = payload.get("session_id", _selected_waiting_session_id)
 			get_tree().change_scene_to_file("res://scenes/GameTable.tscn")
 		"watch_started":
 			# Navigate to spectator view when watching.

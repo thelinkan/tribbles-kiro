@@ -98,7 +98,7 @@ func _ready() -> void:
 	drawn_card_label.visible = false
 
 	# Request initial game state.
-	NetworkClient.send_message("get_game_state", {})
+	NetworkClient.send_message("get_game_state", {"game_id": NetworkClient.current_game_id})
 
 
 # ─── Game State Update (Task 25.3) ─────────────────────────────────────────────
@@ -371,6 +371,7 @@ func _on_hand_card_pressed(card_id: int, _card_data: Dictionary) -> void:
 		return
 
 	NetworkClient.send_message("play_card", {
+		"game_id": NetworkClient.current_game_id,
 		"card_id": card_id,
 		"activate_power": true,
 	})
@@ -381,12 +382,12 @@ func _on_draw_pressed() -> void:
 	if not _is_local_turn:
 		return
 
-	NetworkClient.send_message("draw_card", {})
+	NetworkClient.send_message("draw_card", {"game_id": NetworkClient.current_game_id})
 
 
 ## Called when the Accept button is pressed — send accept_draw action.
 func _on_accept_pressed() -> void:
-	NetworkClient.send_message("accept_draw", {})
+	NetworkClient.send_message("accept_draw", {"game_id": NetworkClient.current_game_id})
 	accept_button.visible = false
 	drawn_card_label.visible = false
 	_drawn_card = {}
@@ -503,6 +504,7 @@ func _show_generic_prompt(payload: Dictionary) -> void:
 ## Called when a prompt option is selected — send power_choice.
 func _on_prompt_option_selected(value: String) -> void:
 	NetworkClient.send_message("power_choice", {
+		"game_id": NetworkClient.current_game_id,
 		"choice_type": "option",
 		"value": value,
 	})
@@ -512,6 +514,7 @@ func _on_prompt_option_selected(value: String) -> void:
 ## Called when the player chooses to play the drawn card.
 func _on_drawn_card_play() -> void:
 	NetworkClient.send_message("power_choice", {
+		"game_id": NetworkClient.current_game_id,
 		"choice_type": "play_drawn",
 		"value": "play",
 	})
@@ -523,7 +526,7 @@ func _on_drawn_card_play() -> void:
 
 ## Called when the player chooses to keep the drawn card in hand.
 func _on_drawn_card_keep() -> void:
-	NetworkClient.send_message("accept_draw", {})
+	NetworkClient.send_message("accept_draw", {"game_id": NetworkClient.current_game_id})
 	prompt_overlay.visible = false
 	accept_button.visible = false
 	drawn_card_label.visible = false

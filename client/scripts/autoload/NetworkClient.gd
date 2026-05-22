@@ -64,6 +64,8 @@ var _socket: WebSocketPeer = null
 var _server_url: String = ""
 ## Session token received after successful login.
 var session_token: String = ""
+## Current game session ID (set when joining/creating/starting a game).
+var current_game_id: String = ""
 ## Whether we are currently connected.
 var is_connected: bool = false
 ## Whether a reconnection sequence is in progress.

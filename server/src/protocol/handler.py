@@ -475,6 +475,66 @@ class MessageHandler:
         if lobby_error is not None:
             return error_message(lobby_error.code, lobby_error.message)
 
+        # Initialise the game in the GameEngine
+        if self._game_engine is not None:
+            from game.engine import GameSession, PlayerSetup
+            from models import CardInstance
+
+            lobby_session = self._lobby_service._sessions.get(session_id)
+            if lobby_session:
+                player_setups = []
+                for pid, deck_id in lobby_session.players.items():
+                    # For AI players (negative IDs), create a minimal deck
+                    if pid < 0:
+                        # AI player with a simple deck of 40 cards
+                        deck_cards = [
+                            CardInstance(
+                                card_id=abs(pid) * 1000 + i,
+                                card_name=f"AI_Card_{i}",
+                                denomination=[1, 10, 100, 1000, 10000, 100000][i % 6],
+                                power_text=["Go", "Skip", "Reverse", "Discard", "Poison", "Rescue"][i % 6],
+                                expansion_id=1,
+                            )
+                            for i in range(40)
+                        ]
+                        player_setups.append(PlayerSetup(
+                            player_id=pid,
+                            username=f"Computer_{abs(pid)}",
+                            is_computer=True,
+                            deck_cards=deck_cards,
+                        ))
+                    else:
+                        # Human player — load their deck from the database
+                        deck_cards = []
+                        if self._deck_service and self._card_repository:
+                            deck, _ = await self._deck_service.load_deck(pid, int(float(str(deck_id))))
+                            if deck:
+                                for card_id, quantity in deck.cards.items():
+                                    card = await self._card_repository.get_card(int(card_id))
+                                    if card:
+                                        for _ in range(quantity):
+                                            deck_cards.append(CardInstance(
+                                                card_id=card.card_id,
+                                                card_name=card.card_name,
+                                                denomination=card.denomination,
+                                                power_text=card.power_text,
+                                                expansion_id=card.expansion_id,
+                                            ))
+                        player_setups.append(PlayerSetup(
+                            player_id=pid,
+                            username=f"Player_{pid}",
+                            is_computer=False,
+                            deck_cards=deck_cards,
+                        ))
+
+                game_session = GameSession(
+                    game_id=session_id,
+                    players=player_setups,
+                    spectators=[],
+                )
+                self._game_engine.initialise_game(game_session)
+                logger.info("Game initialised: session_id=%s with %d players", session_id, len(player_setups))
+
         return encode_message("lobby_response", {"action": "game_started", "session_id": session_id})
 
     async def _handle_list_games(self) -> str:

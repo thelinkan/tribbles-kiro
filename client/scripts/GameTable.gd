@@ -249,34 +249,50 @@ func _show_card_from_hand_prompt(power_name: String, message: String, card_ids: 
 
 
 ## Show card selection from discard pile prompt.
-func _show_card_from_discard_prompt(power_name: String, message: String, card_ids: Array) -> void:
+func _show_card_from_discard_prompt(power_name: String, message: String, card_options: Array) -> void:
 	prompt_title.text = message
 
 	for child in prompt_options.get_children():
 		child.queue_free()
 
-	for card_id in card_ids:
-		var cid: int = int(card_id)
+	for card_option in card_options:
 		var btn := Button.new()
-		btn.text = "Card %d" % cid
-		btn.pressed.connect(_on_power_card_selected.bind(str(cid)))
+		if card_option is Dictionary:
+			var cid: int = int(card_option.get("card_id", 0))
+			var card_name: String = card_option.get("card_name", "")
+			var denom: int = int(card_option.get("denomination", 0))
+			var denom_str: String = DENOMINATION_NAMES.get(denom, str(denom))
+			btn.text = "%s [%s]" % [card_name, denom_str]
+			btn.pressed.connect(_on_power_card_selected.bind(str(cid)))
+		else:
+			var cid: int = int(card_option)
+			btn.text = "Card %d" % cid
+			btn.pressed.connect(_on_power_card_selected.bind(str(cid)))
 		prompt_options.add_child(btn)
 
 	prompt_overlay.visible = true
 
 
 ## Show card selection from play pile prompt.
-func _show_card_from_play_pile_prompt(power_name: String, message: String, card_ids: Array) -> void:
+func _show_card_from_play_pile_prompt(power_name: String, message: String, card_options: Array) -> void:
 	prompt_title.text = message
 
 	for child in prompt_options.get_children():
 		child.queue_free()
 
-	for card_id in card_ids:
-		var cid: int = int(card_id)
+	for card_option in card_options:
 		var btn := Button.new()
-		btn.text = "Card %d" % cid
-		btn.pressed.connect(_on_power_card_selected.bind(str(cid)))
+		if card_option is Dictionary:
+			var cid: int = int(card_option.get("card_id", 0))
+			var card_name: String = card_option.get("card_name", "")
+			var denom: int = int(card_option.get("denomination", 0))
+			var denom_str: String = DENOMINATION_NAMES.get(denom, str(denom))
+			btn.text = "%s [%s]" % [card_name, denom_str]
+			btn.pressed.connect(_on_power_card_selected.bind(str(cid)))
+		else:
+			var cid: int = int(card_option)
+			btn.text = "Card %d" % cid
+			btn.pressed.connect(_on_power_card_selected.bind(str(cid)))
 		prompt_options.add_child(btn)
 
 	prompt_overlay.visible = true

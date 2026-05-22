@@ -800,6 +800,20 @@ class GameEngine:
 
         # Check if the power is fully resolved (no more pending power)
         if state.pending_power is None:
+            # Check if the player went out (hand empty after power effect, e.g., Discard)
+            player = state.players[player_index]
+            if len(player.hand) == 0 and not player.has_gone_out:
+                player.has_gone_out = True
+                events.append({
+                    "type": "player_went_out",
+                    "player_id": player.player_id,
+                    "reason": "empty_hand",
+                })
+                # Trigger end of round
+                round_events = self._trigger_end_of_round(state)
+                events.extend(round_events)
+                return events
+
             # Power fully resolved — advance the turn
             # But check if Go power was activated (player keeps their turn)
             go_activated = any(

@@ -514,15 +514,18 @@ class PowerResolver:
             ]
 
         elif power_name == "rescue":
-            # Prompt to choose a card from discard pile
-            card_ids = [c.card_id for c in player.discard_pile]
+            # Prompt to choose a card from discard pile (include full card info)
+            card_options = [
+                {"card_id": c.card_id, "card_name": c.card_name, "denomination": c.denomination, "power_text": c.power_text}
+                for c in player.discard_pile
+            ]
             return [
                 {
                     "type": "power_prompt",
                     "prompt_type": "choose_card_from_discard",
                     "player_id": player.player_id,
                     "power_name": "rescue",
-                    "options": card_ids,
+                    "options": card_options,
                     "message": "Choose a card from your discard pile to rescue.",
                 }
             ]
@@ -624,15 +627,18 @@ class PowerResolver:
             ]
 
         elif power_name == "replay":
-            # Prompt to choose a card from own play pile
-            card_ids = [c.card_id for c in player.play_pile]
+            # Prompt to choose a card from own play pile (include full card info)
+            card_options = [
+                {"card_id": c.card_id, "card_name": c.card_name, "denomination": c.denomination, "power_text": c.power_text}
+                for c in player.play_pile
+            ]
             return [
                 {
                     "type": "power_prompt",
                     "prompt_type": "choose_card_from_play_pile",
                     "player_id": player.player_id,
                     "power_name": "replay",
-                    "options": card_ids,
+                    "options": card_options,
                     "message": "Choose a card from your play pile to play again.",
                 }
             ]

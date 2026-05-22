@@ -493,7 +493,9 @@ class GameEngine:
                     "type": "draw_choice_pending",
                     "player_id": player.player_id,
                     "card_id": drawn_card.card_id,
+                    "card_name": drawn_card.card_name,
                     "denomination": drawn_card.denomination,
+                    "power_text": drawn_card.power_text,
                     "message": "You drew a matching card. Play it or keep it?",
                 }
             )
@@ -509,8 +511,10 @@ class GameEngine:
                     "type": "draw_accept_pending",
                     "player_id": player.player_id,
                     "card_id": drawn_card.card_id,
+                    "card_name": drawn_card.card_name,
                     "denomination": drawn_card.denomination,
-                    "message": "Drawn card does not match. Press Accept to continue.",
+                    "power_text": drawn_card.power_text,
+                    "message": "Card does not match the current sequence. Pass.",
                 }
             )
 

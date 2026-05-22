@@ -411,12 +411,21 @@ func _on_power_card_selected(card_id: String) -> void:
 
 
 ## Handle draw_choice_pending event — show play/keep choice for matching draw.
+## Handle draw_choice_pending event — show drawn card and play/keep choice.
+## The drawn card matches the current sequence so the player can play it or keep it.
 func _handle_draw_choice_event(event: Dictionary) -> void:
 	var card_id: int = int(event.get("card_id", 0))
 	var denomination: int = int(event.get("denomination", 0))
+	var card_name: String = event.get("card_name", "")
+	var power_text: String = event.get("power_text", "")
 	var denom_str: String = DENOMINATION_NAMES.get(denomination, str(denomination))
 
-	prompt_title.text = "%s %s - %s" % [tr("UI_GAME_DRAWN_CARD"), denom_str, event.get("message", "Play or keep?")]
+	# Show drawn card info prominently
+	var card_display: String = "%s [%s]" % [card_name, denom_str]
+	if power_text != "":
+		card_display += "\n%s" % power_text
+
+	prompt_title.text = "%s:\n%s\n\n%s" % [tr("UI_GAME_DRAWN_CARD"), card_display, "This card matches! Play it or keep in hand?"]
 
 	for child in prompt_options.get_children():
 		child.queue_free()
@@ -427,22 +436,38 @@ func _handle_draw_choice_event(event: Dictionary) -> void:
 	prompt_options.add_child(play_btn)
 
 	var keep_btn := Button.new()
-	keep_btn.text = tr("UI_GAME_ACCEPT_DRAW")
+	keep_btn.text = "Keep in hand (Pass)"
 	keep_btn.pressed.connect(_on_draw_keep_choice)
 	prompt_options.add_child(keep_btn)
 
 	prompt_overlay.visible = true
 
 
-## Handle draw_accept_pending event — show drawn card with Accept button.
+## Handle draw_accept_pending event — show drawn card with Pass button.
+## The drawn card does not match the sequence so it goes into hand automatically.
 func _handle_draw_accept_event(event: Dictionary) -> void:
 	var card_id: int = int(event.get("card_id", 0))
 	var denomination: int = int(event.get("denomination", 0))
+	var card_name: String = event.get("card_name", "")
+	var power_text: String = event.get("power_text", "")
 	var denom_str: String = DENOMINATION_NAMES.get(denomination, str(denomination))
 
-	drawn_card_label.text = "%s: %s" % [tr("UI_GAME_DRAWN_CARD"), denom_str]
-	drawn_card_label.visible = true
-	accept_button.visible = true
+	# Show drawn card info prominently with a Pass button
+	var card_display: String = "%s [%s]" % [card_name, denom_str]
+	if power_text != "":
+		card_display += "\n%s" % power_text
+
+	prompt_title.text = "%s:\n%s\n\n%s" % [tr("UI_GAME_DRAWN_CARD"), card_display, "Does not match. Card goes to hand."]
+
+	for child in prompt_options.get_children():
+		child.queue_free()
+
+	var pass_btn := Button.new()
+	pass_btn.text = "Pass"
+	pass_btn.pressed.connect(_on_draw_keep_choice)
+	prompt_options.add_child(pass_btn)
+
+	prompt_overlay.visible = true
 
 
 ## Called when player chooses to play the drawn matching card.

@@ -58,7 +58,7 @@
     {
         "card_name": "Tribble - Rescue",
         "denomination": 100,
-        "power_text": "Take a card from your discard pile and place it on top of your draw deck.",
+        "power_text": "Look through your discard pile and recover a card. Place it face-down on top of your draw deck - or, if it has the proper number of tribbles, you may play it now.",
         "card_number": "128U",
         "image_filename": "128U_100_rescue.jpg"
     },
@@ -79,7 +79,7 @@
     {
         "card_name": "Tribble - Rescue",
         "denomination": 1000,
-        "power_text": "Take a card from your discard pile and place it on top of your draw deck.",
+        "power_text": "Look through your discard pile and recover a card. Place it face-down on top of your draw deck - or, if it has the proper number of tribbles, you may play it now.",
         "card_number": "131R",
         "image_filename": "131R_1000_rescue.jpg"
     },
@@ -100,7 +100,7 @@
     {
         "card_name": "Tribble - Rescue",
         "denomination": 10000,
-        "power_text": "Take a card from your discard pile and place it on top of your draw deck.",
+        "power_text": "Look through your discard pile and recover a card. Place it face-down on top of your draw deck - or, if it has the proper number of tribbles, you may play it now.",
         "card_number": "134R",
         "image_filename": "134R_10000_rescue.jpg"
     },
@@ -121,7 +121,7 @@
     {
         "card_name": "Tribble - Rescue",
         "denomination": 100000,
-        "power_text": "Take a card from your discard pile and place it on top of your draw deck.",
+        "power_text": "Look through your discard pile and recover a card. Place it face-down on top of your draw deck - or, if it has the proper number of tribbles, you may play it now.",
         "card_number": "137R",
         "image_filename": "137R_100000_rescue.jpg"
     }

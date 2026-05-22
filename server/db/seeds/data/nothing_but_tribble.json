@@ -30,7 +30,7 @@
     {
         "card_name": "Tribble - Rescue",
         "denomination": 10000,
-        "power_text": "Take a card from your discard pile and place it on top of your draw deck.",
+        "power_text": "Look through your discard pile and recover a card. Place it face-down on top of your draw deck - or, if it has the proper number of tribbles, you may play it now.",
         "card_number": "39V",
         "image_filename": "39V_10000_rescue.jpg"
     },

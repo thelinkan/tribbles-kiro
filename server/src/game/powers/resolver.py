@@ -912,6 +912,16 @@ class PowerResolver:
         if power_name == "toxin":
             return self._execute_toxin(game_state, player_index, choice)
 
+        # For rescue placement follow-up (play now vs place on deck)
+        if power_name == "rescue" and hasattr(pending, "rescue_card_id") and pending.rescue_card_id:
+            rescue_card_id = pending.rescue_card_id
+            value = choice.get("value", "")
+            game_state.pending_power = None
+            if value == "play_now":
+                return self._execute_rescue(game_state, player_index, {"card_id": rescue_card_id, "play_immediately": True})
+            else:
+                return self._execute_rescue(game_state, player_index, {"card_id": rescue_card_id, "choice": "place_on_deck"})
+
         # Clear pending power before executing
         game_state.pending_power = None
 
@@ -1103,8 +1113,9 @@ class PowerResolver:
     ) -> Union[List[dict], Tuple[str, str]]:
         """Execute the Rescue power: recover a card from discard pile.
 
-        The chosen card is either placed face-down on top of the draw deck,
-        or if its denomination matches the current sequence, played immediately.
+        Look through your discard pile and recover a card. Place it face-down
+        on top of your draw deck - or, if it has the proper number of tribbles
+        (matches current sequence), you may play it now.
 
         Args:
             game_state: The current game state (modified in place).
@@ -1138,10 +1149,38 @@ class PowerResolver:
                 f"Card {card_id} is not in your discard pile.",
             )
 
+        # Check if the card matches the current sequence
+        matches_sequence = (card.denomination == game_state.current_sequence)
+
+        # If it matches and player hasn't yet chosen what to do, prompt them
+        if matches_sequence and not play_immediately and choice.get("choice") != "place_on_deck":
+            # Set up a second prompt: play now or place on draw deck
+            game_state.pending_power = PendingPower(
+                player_index=player_index,
+                card=game_state.pending_power.card if game_state.pending_power else card,
+                power_name="rescue",
+                phase="choose_target",
+            )
+            # Store the rescued card id for the follow-up choice
+            game_state.pending_power.rescue_card_id = card_id
+            return [
+                {
+                    "type": "power_prompt",
+                    "prompt_type": "choose_card_from_discard",
+                    "player_id": player.player_id,
+                    "power_name": "rescue_placement",
+                    "options": [
+                        {"value": "play_now", "label": "Play it now (matches sequence)"},
+                        {"value": "place_on_deck", "label": "Place on top of draw deck"},
+                    ],
+                    "message": "This card matches the current sequence. Play it now or place on draw deck?",
+                }
+            ]
+
         # Remove from discard pile
         player.discard_pile.pop(card_index)
 
-        if play_immediately and card.denomination == game_state.current_sequence:
+        if play_immediately or choice.get("value") == "play_now":
             # Play immediately — place on play pile
             player.play_pile.append(card)
 

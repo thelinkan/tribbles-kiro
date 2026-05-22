@@ -661,9 +661,14 @@ class MessageHandler:
         if isinstance(result, tuple):
             return error_message(result[0], result[1])
 
-        # Process AI turns if it's now an AI player's turn
-        ai_events = self._process_ai_turns(game_id)
-        result.extend(ai_events)
+        # Only process AI turns if there's no pending draw (turn already advanced)
+        has_pending_draw = any(
+            e.get("type") in ("draw_choice_pending", "draw_accept_pending")
+            for e in result
+        )
+        if not has_pending_draw:
+            ai_events = self._process_ai_turns(game_id)
+            result.extend(ai_events)
 
         return encode_message("action_result", {"events": result})
 
@@ -916,11 +921,13 @@ class MessageHandler:
                 if isinstance(result2, list):
                     all_events.extend(result2)
 
-        # Filter out AI-internal power_prompt events (already resolved by AI).
-        # These would confuse the human client into showing prompts not meant for them.
+        # Filter out AI-internal events that would confuse the human client.
+        # power_prompt: already resolved by AI
+        # draw_choice_pending / draw_accept_pending: already resolved by AI
+        AI_INTERNAL_EVENT_TYPES = {"power_prompt", "draw_choice_pending", "draw_accept_pending"}
         filtered_events = [
             e for e in all_events
-            if e.get("type") != "power_prompt"
+            if e.get("type") not in AI_INTERNAL_EVENT_TYPES
         ]
 
         return filtered_events

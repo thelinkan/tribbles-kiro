@@ -129,6 +129,7 @@ func _on_game_state_update(payload: Dictionary) -> void:
 
 ## Handle action_result messages — check for power_prompt events and show prompts.
 ## Also requests a fresh game state update after processing events.
+## Only shows prompts that are addressed to the local player (ignores AI prompts).
 func _on_action_result_received(payload: Dictionary) -> void:
 	var events: Array = payload.get("events", [])
 
@@ -138,18 +139,29 @@ func _on_action_result_received(payload: Dictionary) -> void:
 		var event_type: String = event.get("type", "")
 
 		if event_type == "power_prompt":
-			_handle_power_prompt_event(event)
-			return  # Don't request state update yet — waiting for player choice
+			# Only show prompts addressed to the local player (ignore AI prompts).
+			var prompt_player_id: int = int(event.get("player_id", -1))
+			if prompt_player_id == _local_player_id:
+				_handle_power_prompt_event(event)
+				return  # Don't request state update yet — waiting for player choice
+			# Otherwise skip this AI prompt event and continue checking.
+			continue
 
 		if event_type == "draw_choice_pending":
-			_handle_draw_choice_event(event)
-			return
+			var draw_player_id: int = int(event.get("player_id", -1))
+			if draw_player_id == _local_player_id:
+				_handle_draw_choice_event(event)
+				return
+			continue
 
 		if event_type == "draw_accept_pending":
-			_handle_draw_accept_event(event)
-			return
+			var draw_player_id: int = int(event.get("player_id", -1))
+			if draw_player_id == _local_player_id:
+				_handle_draw_accept_event(event)
+				return
+			continue
 
-	# No prompt pending — request updated game state
+	# No prompt pending for local player — request updated game state
 	NetworkClient.send_message("get_game_state", {"game_id": NetworkClient.current_game_id})
 
 
@@ -781,6 +793,16 @@ func _update_hand_display() -> void:
 		card_btn.custom_minimum_size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
 		card_btn.size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
 		card_btn.tooltip_text = _format_card_full(card)
+		card_btn.clip_text = true
+		# Apply card styling: opaque light gray background with black border.
+		card_btn.add_theme_stylebox_override("normal", _create_card_stylebox())
+		card_btn.add_theme_stylebox_override("hover", _create_card_stylebox(Color(0.9, 0.9, 0.95, 1.0)))
+		card_btn.add_theme_stylebox_override("pressed", _create_card_stylebox(Color(0.75, 0.75, 0.8, 1.0)))
+		card_btn.add_theme_stylebox_override("disabled", _create_card_stylebox(Color(0.7, 0.7, 0.7, 1.0)))
+		card_btn.add_theme_color_override("font_color", Color(0.0, 0.0, 0.0, 1.0))
+		card_btn.add_theme_color_override("font_hover_color", Color(0.0, 0.0, 0.0, 1.0))
+		card_btn.add_theme_color_override("font_pressed_color", Color(0.0, 0.0, 0.0, 1.0))
+		card_btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.3, 0.3, 1.0))
 		card_btn.pressed.connect(_on_hand_card_pressed.bind(card_id, card))
 		card_btn.mouse_entered.connect(_on_hand_card_hover_entered.bind(card_btn, i))
 		card_btn.mouse_exited.connect(_on_hand_card_hover_exited.bind(card_btn, i))
@@ -1086,6 +1108,18 @@ func _on_game_end(payload: Dictionary) -> void:
 
 
 # ─── Card Formatting Helpers ────────────────────────────────────────────────────
+
+## Create a StyleBoxFlat for card buttons: opaque background with black border.
+## bg_color defaults to light gray; pass a different color for hover/pressed states.
+func _create_card_stylebox(bg_color: Color = Color(0.85, 0.85, 0.85, 1.0)) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.border_color = Color(0.0, 0.0, 0.0, 1.0)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(4)
+	style.set_content_margin_all(4)
+	return style
+
 
 ## Format a card for short display (denomination + power name only).
 func _format_card_short(card: Dictionary) -> String:

@@ -522,6 +522,28 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Test spectator flow: watch → receive updates → leave
     - _Requirements: 18.3_
 
+- [ ] 29.4 Fix gameplay integration issues
+  - [x] 29.4.1 Fix hand cards z-order and card sizing
+    - Move HandContainer to render above PlayerPositions in the GameTable scene
+    - Ensure hand card buttons are always visible and clickable
+    - Show only denomination and power name on card buttons (not full rules text)
+    - Use an overlapping fan layout for the hand: cards overlap horizontally, with the rightmost card fully visible
+    - Fan spacing adjusts dynamically so up to 15 cards fit within the available width
+    - Hovered card rises above others and shows full details in tooltip
+    - Show full card details on hover/tooltip
+    - Move the game info panel (round, direction, sequence, spectator count) to the centre of the screen instead of the top, to avoid overlapping with player positions at the top
+    - Adjust player position coordinates so all players (including leftmost, rightmost, and topmost) are fully within the visible screen area with padding
+  - [ ] 29.4.2 Integrate PowerResolver with play_card flow
+    - After a card with an activatable power is played, server should send a prompt to the client asking activate/decline
+    - Client should display the prompt overlay and send the power_choice response
+    - Server should then process the power effect and continue the turn (including AI turns)
+    - Handle multi-step powers (Poison target selection, Discard card choice, etc.)
+  - [ ] 29.4.3 Fix draw card flow to show drawn card and offer play-or-keep choice
+    - Server already sends draw_choice_pending / draw_accept_pending events in the action_result
+    - Client needs to detect these events in the action_result and show the drawn card UI
+    - For matching draws: show card + Play/Keep buttons
+    - For non-matching draws: show card + Accept button
+
 - [ ] 30. Write client automated tests
   - [ ]* 30.1 Write GUT tests for client scenes
     - Test LoginScreen: scene instantiation, mode toggle, form submission

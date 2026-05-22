@@ -8,15 +8,16 @@ extends Control
 # ─── Constants ──────────────────────────────────────────────────────────────────
 ## Positions around the table for up to 8 players (normalised 0–1 coordinates).
 ## Index 0 is always the local player (bottom centre).
+## Adjusted with padding so all players are fully within the visible screen area.
 const TABLE_POSITIONS: Array[Vector2] = [
-	Vector2(0.5, 0.88),   # 0: bottom centre (local player)
-	Vector2(0.15, 0.70),  # 1: bottom-left
-	Vector2(0.05, 0.40),  # 2: left
-	Vector2(0.15, 0.15),  # 3: top-left
-	Vector2(0.40, 0.05),  # 4: top-centre-left
-	Vector2(0.60, 0.05),  # 5: top-centre-right
-	Vector2(0.85, 0.15),  # 6: top-right
-	Vector2(0.95, 0.40),  # 7: right
+	Vector2(0.50, 0.82),  # 0: bottom centre (local player)
+	Vector2(0.18, 0.65),  # 1: bottom-left
+	Vector2(0.10, 0.40),  # 2: left
+	Vector2(0.18, 0.18),  # 3: top-left
+	Vector2(0.40, 0.10),  # 4: top-centre-left
+	Vector2(0.60, 0.10),  # 5: top-centre-right
+	Vector2(0.82, 0.18),  # 6: top-right
+	Vector2(0.90, 0.40),  # 7: right
 ]
 
 ## Card denomination display names.
@@ -29,6 +30,14 @@ const DENOMINATION_NAMES: Dictionary = {
 	100000: "100,000",
 }
 
+## Hand card dimensions.
+const HAND_CARD_WIDTH: float = 80.0
+const HAND_CARD_HEIGHT: float = 120.0
+## Minimum overlap spacing between cards in the fan.
+const HAND_CARD_MIN_SPACING: float = 25.0
+## How much a hovered card rises above others (pixels).
+const HAND_CARD_HOVER_RISE: float = 20.0
+
 # ─── Node References ────────────────────────────────────────────────────────────
 @onready var game_info_panel: VBoxContainer = %GameInfoPanel
 @onready var sequence_label: Label = %SequenceLabel
@@ -36,7 +45,8 @@ const DENOMINATION_NAMES: Dictionary = {
 @onready var round_label: Label = %RoundLabel
 @onready var spectator_label: Label = %SpectatorLabel
 @onready var player_positions: Control = %PlayerPositions
-@onready var hand_container: HBoxContainer = %HandContainer
+@onready var local_player_piles: HBoxContainer = %LocalPlayerPiles
+@onready var hand_container: Control = %HandContainer
 @onready var action_panel: VBoxContainer = %ActionPanel
 @onready var draw_button: Button = %DrawButton
 @onready var accept_button: Button = %AcceptButton
@@ -67,6 +77,8 @@ var _ai_substitute_players: Dictionary = {}
 var _valid_card_ids: Array[int] = []
 ## The drawn card awaiting acceptance (null if none).
 var _drawn_card: Dictionary = {}
+## Currently hovered hand card button (for z-order management).
+var _hovered_hand_card: Button = null
 
 
 # ─── Lifecycle ──────────────────────────────────────────────────────────────────
@@ -169,6 +181,10 @@ func _update_player_positions() -> void:
 			node.queue_free()
 	_player_nodes.clear()
 
+	# Clear local player piles.
+	for child in local_player_piles.get_children():
+		child.queue_free()
+
 	var players: Array = _game_state.get("players", [])
 	if players.is_empty():
 		return
@@ -192,18 +208,83 @@ func _update_player_positions() -> void:
 	var active_player_id: int = _game_state.get("active_player_id", -1)
 	var viewport_size := get_viewport_rect().size
 
-	for i in range(ordered_players.size()):
+	# Render local player's piles in the dedicated panel above the hand.
+	if not ordered_players.is_empty():
+		var local_data: Dictionary = ordered_players[0]
+		_create_local_player_piles(local_data, active_player_id)
+
+	# Render other players around the table (skip index 0 = local player).
+	for i in range(1, ordered_players.size()):
 		var player_data: Dictionary = ordered_players[i]
 		var pos_index: int = i % TABLE_POSITIONS.size()
 		var table_pos: Vector2 = TABLE_POSITIONS[pos_index]
 
 		var player_node := _create_player_position_node(player_data, active_player_id)
-		player_node.position = Vector2(
-			table_pos.x * viewport_size.x - 80.0,
-			table_pos.y * viewport_size.y - 50.0
-		)
+		# Centre the node on the table position with padding clamping.
+		var node_x: float = table_pos.x * viewport_size.x - 80.0
+		var node_y: float = table_pos.y * viewport_size.y - 50.0
+		# Clamp to ensure fully visible with 10px padding.
+		node_x = clampf(node_x, 10.0, viewport_size.x - 170.0)
+		node_y = clampf(node_y, 10.0, viewport_size.y - 110.0)
+		player_node.position = Vector2(node_x, node_y)
 		player_positions.add_child(player_node)
 		_player_nodes.append(player_node)
+
+
+## Create the local player's piles display in the dedicated panel above the hand.
+## Shows draw deck count, play pile top card, and discard pile top card.
+func _create_local_player_piles(player_data: Dictionary, active_player_id: int) -> void:
+	var player_id: int = int(player_data.get("player_id", 0))
+	var username: String = player_data.get("username", "Player")
+	var score: int = int(player_data.get("cumulative_score", 0))
+	var draw_count: int = int(player_data.get("draw_deck_count", 0))
+
+	# Username + score label on the left.
+	var info_label := Label.new()
+	info_label.text = "%s  %s: %d" % [username, tr("UI_GAME_SCORE"), score]
+	info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	local_player_piles.add_child(info_label)
+
+	# Spacer.
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	local_player_piles.add_child(spacer)
+
+	# Draw deck (face-down with count).
+	var draw_btn := Button.new()
+	draw_btn.text = "%s (%d)" % [tr("UI_GAME_DRAW_DECK"), draw_count]
+	draw_btn.custom_minimum_size = Vector2(70, 35)
+	draw_btn.mouse_entered.connect(_on_pile_hover_entered.bind("draw", player_data))
+	draw_btn.mouse_exited.connect(_on_pile_hover_exited)
+	local_player_piles.add_child(draw_btn)
+
+	# Play pile (top card visible).
+	var play_pile: Array = player_data.get("play_pile_top", [])
+	var play_btn := Button.new()
+	if not play_pile.is_empty():
+		var top_card: Dictionary = play_pile[0] if play_pile[0] is Dictionary else {}
+		play_btn.text = _format_card_short(top_card)
+		play_btn.tooltip_text = _format_card_full(top_card)
+	else:
+		play_btn.text = tr("UI_GAME_PLAY_PILE")
+	play_btn.custom_minimum_size = Vector2(70, 35)
+	play_btn.mouse_entered.connect(_on_pile_hover_entered.bind("play", player_data))
+	play_btn.mouse_exited.connect(_on_pile_hover_exited)
+	local_player_piles.add_child(play_btn)
+
+	# Discard pile (top card visible).
+	var discard_pile: Array = player_data.get("discard_pile_top", [])
+	var discard_btn := Button.new()
+	if not discard_pile.is_empty():
+		var top_card: Dictionary = discard_pile[0] if discard_pile[0] is Dictionary else {}
+		discard_btn.text = _format_card_short(top_card)
+		discard_btn.tooltip_text = _format_card_full(top_card)
+	else:
+		discard_btn.text = tr("UI_GAME_DISCARD_PILE")
+	discard_btn.custom_minimum_size = Vector2(70, 35)
+	discard_btn.mouse_entered.connect(_on_pile_hover_entered.bind("discard", player_data))
+	discard_btn.mouse_exited.connect(_on_pile_hover_exited)
+	local_player_piles.add_child(discard_btn)
 
 
 ## Create a single player position UI node showing username, score, piles.
@@ -319,30 +400,97 @@ func _on_pile_hover_exited() -> void:
 	enlarged_card_panel.visible = false
 
 
-# ─── Hand Display (Task 25.2) ──────────────────────────────────────────────────
+# ─── Hand Display (Task 25.2 / 29.4.1) ────────────────────────────────────────
 
-## Rebuild the local player's hand display.
+## Rebuild the local player's hand display using an overlapping fan layout.
+## Cards overlap horizontally with the rightmost card fully visible.
+## Fan spacing adjusts dynamically so up to 15 cards fit within available width.
 func _update_hand_display() -> void:
 	# Clear existing hand cards.
 	for child in hand_container.get_children():
 		child.queue_free()
+	_hovered_hand_card = null
 
 	var hand: Array = _game_state.get("hand", [])
-	for card_data in hand:
+	if hand.is_empty():
+		return
+
+	var card_count: int = hand.size()
+	var container_width: float = hand_container.size.x
+	if container_width <= 0:
+		container_width = 800.0  # Fallback width.
+
+	# Calculate spacing: fit all cards within available width.
+	# The last card is fully visible, so total width = spacing * (n-1) + card_width.
+	var spacing: float = HAND_CARD_WIDTH  # Default: no overlap.
+	if card_count > 1:
+		var available_for_spacing: float = container_width - HAND_CARD_WIDTH
+		spacing = available_for_spacing / float(card_count - 1)
+		# Clamp spacing: at least HAND_CARD_MIN_SPACING, at most full card width.
+		spacing = clampf(spacing, HAND_CARD_MIN_SPACING, HAND_CARD_WIDTH)
+
+	# Calculate starting x to centre the fan within the container.
+	var total_fan_width: float = spacing * float(card_count - 1) + HAND_CARD_WIDTH
+	var start_x: float = (container_width - total_fan_width) / 2.0
+
+	for i in range(card_count):
+		var card_data = hand[i]
 		if not card_data is Dictionary:
 			continue
 		var card: Dictionary = card_data
 		var card_id: int = int(card.get("card_id", 0))
 
 		var card_btn := Button.new()
+		# Show only denomination and power name (not full rules text).
 		card_btn.text = _format_card_short(card)
-		card_btn.custom_minimum_size = Vector2(80, 120)
+		card_btn.custom_minimum_size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
+		card_btn.size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
 		card_btn.tooltip_text = _format_card_full(card)
 		card_btn.pressed.connect(_on_hand_card_pressed.bind(card_id, card))
+		card_btn.mouse_entered.connect(_on_hand_card_hover_entered.bind(card_btn, i))
+		card_btn.mouse_exited.connect(_on_hand_card_hover_exited.bind(card_btn, i))
 		card_btn.set_meta("card_id", card_id)
+		card_btn.set_meta("base_y", 0.0)
+
+		# Position the card in the fan layout.
+		card_btn.position = Vector2(start_x + spacing * float(i), 0.0)
+
 		hand_container.add_child(card_btn)
 
 	_highlight_hand_cards()
+
+
+## Called when mouse enters a hand card — raise it above others.
+func _on_hand_card_hover_entered(card_btn: Button, _index: int) -> void:
+	_hovered_hand_card = card_btn
+	# Raise the card visually by moving it up.
+	card_btn.position.y = -HAND_CARD_HOVER_RISE
+	# Move to front so it renders above overlapping neighbours.
+	hand_container.move_child(card_btn, hand_container.get_child_count() - 1)
+
+
+## Called when mouse exits a hand card — restore its position.
+func _on_hand_card_hover_exited(card_btn: Button, _index: int) -> void:
+	if _hovered_hand_card == card_btn:
+		_hovered_hand_card = null
+	# Restore vertical position.
+	card_btn.position.y = 0.0
+	# Restore z-order by re-laying out (move back to original index).
+	# We re-sort all children by their x position to restore proper overlap order.
+	_restore_hand_z_order()
+
+
+## Restore the z-order of hand cards based on their x position (left to right).
+func _restore_hand_z_order() -> void:
+	var children: Array[Node] = []
+	for child in hand_container.get_children():
+		children.append(child)
+	# Sort by x position (leftmost first = lowest z-order).
+	children.sort_custom(func(a: Node, b: Node) -> bool:
+		return a.position.x < b.position.x
+	)
+	for i in range(children.size()):
+		hand_container.move_child(children[i], i)
 
 
 ## Highlight valid playable cards in the hand.
@@ -604,7 +752,7 @@ func _on_game_end(payload: Dictionary) -> void:
 
 # ─── Card Formatting Helpers ────────────────────────────────────────────────────
 
-## Format a card for short display (denomination + power abbreviation).
+## Format a card for short display (denomination + power name only).
 func _format_card_short(card: Dictionary) -> String:
 	if card.is_empty():
 		return "—"
@@ -613,10 +761,13 @@ func _format_card_short(card: Dictionary) -> String:
 	var denom_str: String = DENOMINATION_NAMES.get(denom, str(denom))
 	if power == "":
 		return denom_str
-	return "%s\n%s" % [denom_str, power]
+	# Show only the power name, not full rules text.
+	# Power names are typically short (e.g., "Go", "Skip", "Poison").
+	var power_name: String = power.split(":")[0].strip_edges() if ":" in power else power
+	return "%s\n%s" % [denom_str, power_name]
 
 
-## Format a card for full display (name, denomination, power).
+## Format a card for full display (name, denomination, power with full text).
 func _format_card_full(card: Dictionary) -> String:
 	if card.is_empty():
 		return "—"

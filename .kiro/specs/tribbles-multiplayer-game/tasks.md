@@ -538,7 +538,7 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - Client should display the prompt overlay and send the power_choice response
     - Server should then process the power effect and continue the turn (including AI turns)
     - Handle multi-step powers (Poison target selection, Discard card choice, etc.)
-  - [ ] 29.4.3 Fix draw card flow to show drawn card and offer play-or-keep choice
+  - [x] 29.4.3 Fix draw card flow to show drawn card and offer play-or-keep choice
     - Server already sends draw_choice_pending / draw_accept_pending events in the action_result
     - Client needs to detect these events in the action_result and show the drawn card UI
     - For matching draws: show card + Play/Keep buttons

@@ -852,6 +852,7 @@ class MessageHandler:
                 "is_computer": p.is_computer,
                 "cumulative_score": p.cumulative_score,
                 "draw_deck_count": len(p.draw_deck),
+                "hand_count": len(p.hand),
                 "play_pile_top": play_pile_top,
                 "discard_pile_top": discard_pile_top,
                 "is_decked": p.is_decked,

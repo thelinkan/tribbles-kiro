@@ -724,9 +724,10 @@ func _create_player_position_node(player_data: Dictionary, active_player_id: int
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	container.add_child(name_label)
 
-	# Score label.
+	# Score and hand count label.
+	var hand_count: int = int(player_data.get("hand_count", 0))
 	var score_label := Label.new()
-	score_label.text = "%s: %d" % [tr("UI_GAME_SCORE"), score]
+	score_label.text = "%s: %d  |  Hand: %d" % [tr("UI_GAME_SCORE"), score, hand_count]
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	container.add_child(score_label)
 

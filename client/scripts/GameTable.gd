@@ -162,7 +162,7 @@ func _handle_power_prompt_event(event: Dictionary) -> void:
 
 	match prompt_type:
 		"activate_or_decline":
-			_show_activate_decline_prompt(power_name, message)
+			_show_activate_decline_prompt(power_name, message, options, event.get("pile_cards", []))
 		"choose_target_player":
 			_show_target_player_prompt(power_name, message, options)
 		"choose_card_from_hand":
@@ -184,21 +184,52 @@ func _handle_power_prompt_event(event: Dictionary) -> void:
 
 
 ## Show activate/decline prompt for a power.
-func _show_activate_decline_prompt(power_name: String, message: String) -> void:
+## If custom_options are provided (e.g., just a "Continue" button), use those instead.
+## If pile_cards are provided, display them as an informational list.
+func _show_activate_decline_prompt(power_name: String, message: String, custom_options: Array = [], pile_cards: Array = []) -> void:
 	prompt_title.text = message
 
 	for child in prompt_options.get_children():
 		child.queue_free()
 
-	var activate_btn := Button.new()
-	activate_btn.text = "%s %s" % [tr("UI_GAME_ACTIVATE_POWER"), power_name.capitalize()]
-	activate_btn.pressed.connect(_on_power_choice_selected.bind("activate"))
-	prompt_options.add_child(activate_btn)
+	# Show pile cards as informational list (e.g., for Replay with no legal targets)
+	if not pile_cards.is_empty():
+		var info_label := Label.new()
+		info_label.text = "Cards in your play pile:"
+		info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		prompt_options.add_child(info_label)
+		for card_info in pile_cards:
+			if card_info is Dictionary:
+				var denom: int = int(card_info.get("denomination", 0))
+				var card_name: String = card_info.get("card_name", "")
+				var denom_str: String = DENOMINATION_NAMES.get(denom, str(denom))
+				var card_label := Label.new()
+				card_label.text = "  %s [%s]" % [card_name, denom_str]
+				card_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+				prompt_options.add_child(card_label)
 
-	var decline_btn := Button.new()
-	decline_btn.text = tr("UI_GAME_DECLINE_POWER")
-	decline_btn.pressed.connect(_on_power_choice_selected.bind("decline"))
-	prompt_options.add_child(decline_btn)
+	# Use custom options if provided (e.g., just "Continue")
+	if not custom_options.is_empty():
+		for opt in custom_options:
+			var btn := Button.new()
+			if opt is Dictionary:
+				btn.text = str(opt.get("label", opt.get("value", "OK")))
+				btn.pressed.connect(_on_power_choice_selected.bind(str(opt.get("value", "decline"))))
+			else:
+				btn.text = str(opt)
+				btn.pressed.connect(_on_power_choice_selected.bind(str(opt)))
+			prompt_options.add_child(btn)
+	else:
+		# Default: Activate / Decline buttons
+		var activate_btn := Button.new()
+		activate_btn.text = "%s %s" % [tr("UI_GAME_ACTIVATE_POWER"), power_name.capitalize()]
+		activate_btn.pressed.connect(_on_power_choice_selected.bind("activate"))
+		prompt_options.add_child(activate_btn)
+
+		var decline_btn := Button.new()
+		decline_btn.text = tr("UI_GAME_DECLINE_POWER")
+		decline_btn.pressed.connect(_on_power_choice_selected.bind("decline"))
+		prompt_options.add_child(decline_btn)
 
 	prompt_overlay.visible = true
 

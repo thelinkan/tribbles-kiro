@@ -210,6 +210,21 @@ class PowerResolver:
         if power_name is None:
             return None
 
+        # Skip activation prompt if the power cannot be used
+        player = game_state.players[player_index]
+        if power_name == "rescue" and not player.discard_pile:
+            return None
+        if power_name == "discard" and not player.hand:
+            return None
+        if power_name == "poison":
+            has_target = any(
+                len(p.draw_deck) > 0
+                for i, p in enumerate(game_state.players)
+                if i != player_index
+            )
+            if not has_target:
+                return None
+
         game_state.pending_power = PendingPower(
             player_index=player_index,
             card=card,
@@ -627,18 +642,41 @@ class PowerResolver:
             ]
 
         elif power_name == "replay":
-            # Prompt to choose a card from own play pile (include full card info)
-            card_options = [
+            # Replay can only target cards whose denomination matches the current sequence.
+            # Exclude the Replay card itself from options.
+            pending_card = game_state.pending_power.card if game_state.pending_power else None
+            all_pile_cards = [
                 {"card_id": c.card_id, "card_name": c.card_name, "denomination": c.denomination, "power_text": c.power_text}
                 for c in player.play_pile
+                if pending_card is None or c.card_id != pending_card.card_id
             ]
+            # Filter to only cards that match the current sequence (legal to play)
+            playable_options = [
+                c for c in all_pile_cards
+                if c["denomination"] == game_state.current_sequence
+            ]
+
+            if not playable_options:
+                # No legal targets — show all pile cards for info, with Continue button
+                game_state.pending_power = None
+                return [
+                    {
+                        "type": "power_prompt",
+                        "prompt_type": "activate_or_decline",
+                        "player_id": player.player_id,
+                        "power_name": "replay",
+                        "options": [{"value": "decline", "label": "Continue"}],
+                        "pile_cards": all_pile_cards,
+                        "message": "No legal target — no card in your play pile matches the current sequence.",
+                    }
+                ]
             return [
                 {
                     "type": "power_prompt",
                     "prompt_type": "choose_card_from_play_pile",
                     "player_id": player.player_id,
                     "power_name": "replay",
-                    "options": card_options,
+                    "options": playable_options,
                     "message": "Choose a card from your play pile to play again.",
                 }
             ]

@@ -889,6 +889,18 @@ class PowerResolver:
         pending = game_state.pending_power
         power_name = pending.power_name
 
+        # Allow declining during target selection (e.g., no valid targets available)
+        if choice.get("choice") == "decline":
+            game_state.pending_power = None
+            return [
+                {
+                    "type": "power_declined",
+                    "player_id": game_state.players[player_index].player_id,
+                    "power_name": power_name,
+                    "reason": "no_valid_target",
+                }
+            ]
+
         # For toxin, we need to access pending power data during execution
         # so don't clear it yet — let the execute method handle it
         if power_name == "toxin":

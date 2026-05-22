@@ -960,8 +960,41 @@ class MessageHandler:
             choice_action = {"type": "power_choice"}
 
             if pending.phase == "activate_or_decline":
-                # AI always activates powers
-                choice_action["choice"] = "activate"
+                # AI activates powers only if they can be used effectively
+                power_name = pending.power_name
+                should_activate = True
+
+                # Check if the power has valid targets before activating
+                if power_name == "rescue" and not player.discard_pile:
+                    should_activate = False
+                elif power_name == "discard" and not player.hand:
+                    should_activate = False
+                elif power_name == "cycle" and not player.hand:
+                    should_activate = False
+                elif power_name == "exchange" and (not player.hand or not player.discard_pile):
+                    should_activate = False
+                elif power_name == "replay" and not player.play_pile:
+                    should_activate = False
+                elif power_name == "poison":
+                    has_target = any(
+                        len(p.draw_deck) > 0
+                        for i, p in enumerate(game_state.players)
+                        if i != player_index
+                    )
+                    if not has_target:
+                        should_activate = False
+                elif power_name == "kill":
+                    has_target = any(
+                        len(p.play_pile) > 0
+                        for i, p in enumerate(game_state.players)
+                        if i != player_index
+                    )
+                    if not has_target:
+                        should_activate = False
+                elif power_name == "avalanche" and len(player.hand) < 4:
+                    should_activate = False
+
+                choice_action["choice"] = "activate" if should_activate else "decline"
             elif pending.phase == "choose_target":
                 choice_action["choice"] = "activate"
                 power_name = pending.power_name

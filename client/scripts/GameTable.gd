@@ -77,8 +77,8 @@ var _ai_substitute_players: Dictionary = {}
 var _valid_card_ids: Array[int] = []
 ## The drawn card awaiting acceptance (null if none).
 var _drawn_card: Dictionary = {}
-## Currently hovered hand card button (for z-order management).
-var _hovered_hand_card: Button = null
+## Currently hovered hand card node (for z-order management).
+var _hovered_hand_card: Control = null
 
 
 # ─── Lifecycle ──────────────────────────────────────────────────────────────────
@@ -816,51 +816,40 @@ func _update_hand_display() -> void:
 		var card: Dictionary = card_data
 		var card_id: int = int(card.get("card_id", 0))
 
-		var card_btn := Button.new()
-		# Show only denomination and power name (not full rules text).
-		card_btn.text = _format_card_short(card)
-		card_btn.custom_minimum_size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
-		card_btn.size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
-		card_btn.tooltip_text = _format_card_full(card)
-		card_btn.clip_text = true
-		# Apply card styling: opaque light gray background with black border.
-		card_btn.add_theme_stylebox_override("normal", _create_card_stylebox())
-		card_btn.add_theme_stylebox_override("hover", _create_card_stylebox(Color(0.9, 0.9, 0.95, 1.0)))
-		card_btn.add_theme_stylebox_override("pressed", _create_card_stylebox(Color(0.75, 0.75, 0.8, 1.0)))
-		card_btn.add_theme_stylebox_override("disabled", _create_card_stylebox(Color(0.7, 0.7, 0.7, 1.0)))
-		card_btn.add_theme_color_override("font_color", Color(0.0, 0.0, 0.0, 1.0))
-		card_btn.add_theme_color_override("font_hover_color", Color(0.0, 0.0, 0.0, 1.0))
-		card_btn.add_theme_color_override("font_pressed_color", Color(0.0, 0.0, 0.0, 1.0))
-		card_btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.3, 0.3, 1.0))
-		card_btn.pressed.connect(_on_hand_card_pressed.bind(card_id, card))
-		card_btn.mouse_entered.connect(_on_hand_card_hover_entered.bind(card_btn, i))
-		card_btn.mouse_exited.connect(_on_hand_card_hover_exited.bind(card_btn, i))
-		card_btn.set_meta("card_id", card_id)
-		card_btn.set_meta("base_y", 0.0)
+		# Try to load a card image; fall back to styled text button.
+		var card_node: Control = _create_hand_card_node(card, card_id)
+		card_node.custom_minimum_size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
+		card_node.size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
+		card_node.tooltip_text = _format_card_full(card)
+		card_node.gui_input.connect(_on_hand_card_gui_input.bind(card_id, card))
+		card_node.mouse_entered.connect(_on_hand_card_hover_entered.bind(card_node, i))
+		card_node.mouse_exited.connect(_on_hand_card_hover_exited.bind(card_node, i))
+		card_node.set_meta("card_id", card_id)
+		card_node.set_meta("base_y", 0.0)
 
 		# Position the card in the fan layout.
-		card_btn.position = Vector2(start_x + spacing * float(i), 0.0)
+		card_node.position = Vector2(start_x + spacing * float(i), 0.0)
 
-		hand_container.add_child(card_btn)
+		hand_container.add_child(card_node)
 
 	_highlight_hand_cards()
 
 
 ## Called when mouse enters a hand card — raise it above others.
-func _on_hand_card_hover_entered(card_btn: Button, _index: int) -> void:
-	_hovered_hand_card = card_btn
+func _on_hand_card_hover_entered(card_node: Control, _index: int) -> void:
+	_hovered_hand_card = card_node
 	# Raise the card visually by moving it up.
-	card_btn.position.y = -HAND_CARD_HOVER_RISE
+	card_node.position.y = -HAND_CARD_HOVER_RISE
 	# Move to front so it renders above overlapping neighbours.
-	hand_container.move_child(card_btn, hand_container.get_child_count() - 1)
+	hand_container.move_child(card_node, hand_container.get_child_count() - 1)
 
 
 ## Called when mouse exits a hand card — restore its position.
-func _on_hand_card_hover_exited(card_btn: Button, _index: int) -> void:
-	if _hovered_hand_card == card_btn:
+func _on_hand_card_hover_exited(card_node: Control, _index: int) -> void:
+	if _hovered_hand_card == card_node:
 		_hovered_hand_card = null
 	# Restore vertical position.
-	card_btn.position.y = 0.0
+	card_node.position.y = 0.0
 	# Restore z-order by re-laying out (move back to original index).
 	# We re-sort all children by their x position to restore proper overlap order.
 	_restore_hand_z_order()
@@ -882,17 +871,18 @@ func _restore_hand_z_order() -> void:
 ## Highlight valid playable cards in the hand.
 func _highlight_hand_cards() -> void:
 	for child in hand_container.get_children():
-		if child is Button:
-			var card_id: int = int(child.get_meta("card_id", 0))
-			if _is_local_turn and card_id in _valid_card_ids:
-				child.modulate = Color(1.0, 1.0, 0.6, 1.0)  # Yellow highlight.
-				child.disabled = false
-			elif _is_local_turn:
-				child.modulate = Color(0.6, 0.6, 0.6, 1.0)  # Dimmed.
-				child.disabled = true
-			else:
-				child.modulate = Color(1.0, 1.0, 1.0, 1.0)  # Normal.
-				child.disabled = true
+		if not child.has_meta("card_id"):
+			continue
+		var card_id: int = int(child.get_meta("card_id", 0))
+		if _is_local_turn and card_id in _valid_card_ids:
+			child.modulate = Color(1.0, 1.0, 0.6, 1.0)  # Yellow highlight.
+			child.mouse_filter = Control.MOUSE_FILTER_STOP
+		elif _is_local_turn:
+			child.modulate = Color(0.6, 0.6, 0.6, 1.0)  # Dimmed.
+			child.mouse_filter = Control.MOUSE_FILTER_STOP
+		else:
+			child.modulate = Color(1.0, 1.0, 1.0, 1.0)  # Normal.
+			child.mouse_filter = Control.MOUSE_FILTER_STOP
 
 
 # ─── Turn Interaction (Task 25.2) ──────────────────────────────────────────────
@@ -909,6 +899,12 @@ func _on_hand_card_pressed(card_id: int, _card_data: Dictionary) -> void:
 		"card_id": card_id,
 		"activate_power": true,
 	})
+
+
+## Called when a hand card node receives gui_input (click) — delegates to _on_hand_card_pressed.
+func _on_hand_card_gui_input(event: InputEvent, card_id: int, card_data: Dictionary) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_on_hand_card_pressed(card_id, card_data)
 
 
 ## Called when the Draw button is pressed — send draw_card action.
@@ -1137,6 +1133,40 @@ func _on_game_end(payload: Dictionary) -> void:
 
 
 # ─── Card Formatting Helpers ────────────────────────────────────────────────────
+
+## Create a hand card node — uses card image if available, otherwise a styled button.
+## Card images are looked up at res://assets/cards/{image_filename}.
+func _create_hand_card_node(card: Dictionary, card_id: int) -> Control:
+	var image_filename: String = card.get("image_filename", "")
+
+	# Try to load card image
+	if image_filename != "":
+		var image_path: String = "res://assets/cards/%s" % image_filename
+		if ResourceLoader.exists(image_path):
+			var texture: Texture2D = load(image_path)
+			if texture != null:
+				var tex_btn := TextureButton.new()
+				tex_btn.texture_normal = texture
+				tex_btn.ignore_texture_size = true
+				tex_btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_COVERED
+				tex_btn.custom_minimum_size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
+				tex_btn.size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
+				return tex_btn
+
+	# Fallback: styled text button
+	var card_btn := Button.new()
+	card_btn.text = _format_card_short(card)
+	card_btn.clip_text = true
+	card_btn.add_theme_stylebox_override("normal", _create_card_stylebox())
+	card_btn.add_theme_stylebox_override("hover", _create_card_stylebox(Color(0.9, 0.9, 0.95, 1.0)))
+	card_btn.add_theme_stylebox_override("pressed", _create_card_stylebox(Color(0.75, 0.75, 0.8, 1.0)))
+	card_btn.add_theme_stylebox_override("disabled", _create_card_stylebox(Color(0.7, 0.7, 0.7, 1.0)))
+	card_btn.add_theme_color_override("font_color", Color(0.0, 0.0, 0.0, 1.0))
+	card_btn.add_theme_color_override("font_hover_color", Color(0.0, 0.0, 0.0, 1.0))
+	card_btn.add_theme_color_override("font_pressed_color", Color(0.0, 0.0, 0.0, 1.0))
+	card_btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.3, 0.3, 1.0))
+	return card_btn
+
 
 ## Create a StyleBoxFlat for card buttons: opaque background with black border.
 ## bg_color defaults to light gray; pass a different color for hover/pressed states.

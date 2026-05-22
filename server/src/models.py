@@ -19,6 +19,8 @@ class CardInstance:
         denomination: Numeric value of the card (1, 10, 100, 1000, 10000, or 100000).
         power_text: The power or ability text on the card.
         expansion_id: ID of the expansion this card belongs to.
+        card_number: The collector number of the card (e.g., "120").
+        image_filename: The filename of the card image (e.g., "120_1_bonus.jpg").
     """
 
     card_id: int
@@ -26,6 +28,8 @@ class CardInstance:
     denomination: int
     power_text: str
     expansion_id: int
+    card_number: str = ""
+    image_filename: str = ""
 
 
 @dataclass

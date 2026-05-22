@@ -775,6 +775,7 @@ class MessageHandler:
                 "denomination": c.denomination,
                 "power_text": c.power_text,
                 "expansion_id": c.expansion_id,
+                "image_filename": c.image_filename,
             }
             for c in player.hand
         ]

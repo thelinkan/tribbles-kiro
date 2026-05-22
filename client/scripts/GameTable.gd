@@ -626,41 +626,45 @@ func _create_local_player_piles(player_data: Dictionary, active_player_id: int) 
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	local_player_piles.add_child(spacer)
 
-	# Draw deck (face-down with count).
-	var draw_btn := Button.new()
-	draw_btn.text = "%s (%d)" % [tr("UI_GAME_DRAW_DECK"), draw_count]
-	draw_btn.custom_minimum_size = Vector2(70, 35)
-	draw_btn.mouse_entered.connect(_on_pile_hover_entered.bind("draw", player_data))
-	draw_btn.mouse_exited.connect(_on_pile_hover_exited)
-	local_player_piles.add_child(draw_btn)
+	# Draw deck (card back image with count overlay).
+	var draw_node := _create_pile_node("cardback.jpg", "(%d)" % draw_count, Vector2(50, 70))
+	draw_node.mouse_entered.connect(_on_pile_hover_entered.bind("draw", player_data))
+	draw_node.mouse_exited.connect(_on_pile_hover_exited)
+	local_player_piles.add_child(draw_node)
 
 	# Play pile (top card visible).
 	var play_pile: Array = player_data.get("play_pile_top", [])
-	var play_btn := Button.new()
 	if not play_pile.is_empty():
 		var top_card: Dictionary = play_pile[0] if play_pile[0] is Dictionary else {}
-		play_btn.text = _format_card_short(top_card)
-		play_btn.tooltip_text = _format_card_full(top_card)
+		var play_node := _create_card_pile_node(top_card, Vector2(50, 70))
+		play_node.tooltip_text = _format_card_full(top_card)
+		play_node.mouse_entered.connect(_on_pile_hover_entered.bind("play", player_data))
+		play_node.mouse_exited.connect(_on_pile_hover_exited)
+		local_player_piles.add_child(play_node)
 	else:
-		play_btn.text = tr("UI_GAME_PLAY_PILE")
-	play_btn.custom_minimum_size = Vector2(70, 35)
-	play_btn.mouse_entered.connect(_on_pile_hover_entered.bind("play", player_data))
-	play_btn.mouse_exited.connect(_on_pile_hover_exited)
-	local_player_piles.add_child(play_btn)
+		var empty_label := Label.new()
+		empty_label.text = tr("UI_GAME_PLAY_PILE")
+		empty_label.custom_minimum_size = Vector2(50, 70)
+		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		local_player_piles.add_child(empty_label)
 
 	# Discard pile (top card visible).
 	var discard_pile: Array = player_data.get("discard_pile_top", [])
-	var discard_btn := Button.new()
 	if not discard_pile.is_empty():
 		var top_card: Dictionary = discard_pile[0] if discard_pile[0] is Dictionary else {}
-		discard_btn.text = _format_card_short(top_card)
-		discard_btn.tooltip_text = _format_card_full(top_card)
+		var discard_node := _create_card_pile_node(top_card, Vector2(50, 70))
+		discard_node.tooltip_text = _format_card_full(top_card)
+		discard_node.mouse_entered.connect(_on_pile_hover_entered.bind("discard", player_data))
+		discard_node.mouse_exited.connect(_on_pile_hover_exited)
+		local_player_piles.add_child(discard_node)
 	else:
-		discard_btn.text = tr("UI_GAME_DISCARD_PILE")
-	discard_btn.custom_minimum_size = Vector2(70, 35)
-	discard_btn.mouse_entered.connect(_on_pile_hover_entered.bind("discard", player_data))
-	discard_btn.mouse_exited.connect(_on_pile_hover_exited)
-	local_player_piles.add_child(discard_btn)
+		var empty_label := Label.new()
+		empty_label.text = tr("UI_GAME_DISCARD_PILE")
+		empty_label.custom_minimum_size = Vector2(50, 70)
+		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		local_player_piles.add_child(empty_label)
 
 
 ## Create a single player position UI node showing username, score, piles.
@@ -699,39 +703,45 @@ func _create_player_position_node(player_data: Dictionary, active_player_id: int
 	var piles_row := HBoxContainer.new()
 	piles_row.alignment = BoxContainer.ALIGNMENT_CENTER
 
-	# Draw deck (face-down with count).
-	var draw_btn := Button.new()
-	draw_btn.text = "%s\n(%d)" % [tr("UI_GAME_DRAW_DECK"), draw_count]
-	draw_btn.custom_minimum_size = Vector2(50, 40)
-	draw_btn.mouse_entered.connect(_on_pile_hover_entered.bind("draw", player_data))
-	draw_btn.mouse_exited.connect(_on_pile_hover_exited)
-	piles_row.add_child(draw_btn)
+	# Draw deck (card back image with count).
+	var draw_node := _create_pile_node("cardback.jpg", "(%d)" % draw_count, Vector2(40, 56))
+	draw_node.mouse_entered.connect(_on_pile_hover_entered.bind("draw", player_data))
+	draw_node.mouse_exited.connect(_on_pile_hover_exited)
+	piles_row.add_child(draw_node)
 
 	# Play pile (top card visible).
 	var play_pile: Array = player_data.get("play_pile_top", [])
-	var play_btn := Button.new()
 	if not play_pile.is_empty():
 		var top_card: Dictionary = play_pile[0] if play_pile[0] is Dictionary else {}
-		play_btn.text = _format_card_short(top_card)
+		var play_node := _create_card_pile_node(top_card, Vector2(40, 56))
+		play_node.tooltip_text = _format_card_full(top_card)
+		play_node.mouse_entered.connect(_on_pile_hover_entered.bind("play", player_data))
+		play_node.mouse_exited.connect(_on_pile_hover_exited)
+		piles_row.add_child(play_node)
 	else:
-		play_btn.text = tr("UI_GAME_PLAY_PILE")
-	play_btn.custom_minimum_size = Vector2(50, 40)
-	play_btn.mouse_entered.connect(_on_pile_hover_entered.bind("play", player_data))
-	play_btn.mouse_exited.connect(_on_pile_hover_exited)
-	piles_row.add_child(play_btn)
+		var play_btn := Button.new()
+		play_btn.text = "Play"
+		play_btn.custom_minimum_size = Vector2(40, 56)
+		play_btn.mouse_entered.connect(_on_pile_hover_entered.bind("play", player_data))
+		play_btn.mouse_exited.connect(_on_pile_hover_exited)
+		piles_row.add_child(play_btn)
 
 	# Discard pile (top card visible).
 	var discard_pile: Array = player_data.get("discard_pile_top", [])
-	var discard_btn := Button.new()
 	if not discard_pile.is_empty():
 		var top_card: Dictionary = discard_pile[0] if discard_pile[0] is Dictionary else {}
-		discard_btn.text = _format_card_short(top_card)
+		var discard_node := _create_card_pile_node(top_card, Vector2(40, 56))
+		discard_node.tooltip_text = _format_card_full(top_card)
+		discard_node.mouse_entered.connect(_on_pile_hover_entered.bind("discard", player_data))
+		discard_node.mouse_exited.connect(_on_pile_hover_exited)
+		piles_row.add_child(discard_node)
 	else:
-		discard_btn.text = tr("UI_GAME_DISCARD_PILE")
-	discard_btn.custom_minimum_size = Vector2(50, 40)
-	discard_btn.mouse_entered.connect(_on_pile_hover_entered.bind("discard", player_data))
-	discard_btn.mouse_exited.connect(_on_pile_hover_exited)
-	piles_row.add_child(discard_btn)
+		var discard_btn := Button.new()
+		discard_btn.text = "Disc"
+		discard_btn.custom_minimum_size = Vector2(40, 56)
+		discard_btn.mouse_entered.connect(_on_pile_hover_entered.bind("discard", player_data))
+		discard_btn.mouse_exited.connect(_on_pile_hover_exited)
+		piles_row.add_child(discard_btn)
 
 	container.add_child(piles_row)
 	return container
@@ -1134,24 +1144,94 @@ func _on_game_end(payload: Dictionary) -> void:
 
 # ─── Card Formatting Helpers ────────────────────────────────────────────────────
 
+## Create a pile node showing a card back image (or fallback) with an overlay label.
+## Used for draw decks. Shows cardback.jpg with the card count overlaid.
+func _create_pile_node(image_name: String, overlay_text: String, card_size: Vector2) -> Control:
+	var container := Control.new()
+	container.custom_minimum_size = card_size
+	container.size = card_size
+	container.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var texture: Texture2D = _load_card_texture(image_name)
+	if texture != null:
+		var tex_rect := TextureRect.new()
+		tex_rect.texture = texture
+		tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		tex_rect.custom_minimum_size = card_size
+		tex_rect.size = card_size
+		container.add_child(tex_rect)
+	else:
+		# Fallback: dark colored rect
+		var bg := ColorRect.new()
+		bg.color = Color(0.2, 0.2, 0.4, 1.0)
+		bg.custom_minimum_size = card_size
+		bg.size = card_size
+		container.add_child(bg)
+
+	# Overlay label (card count)
+	var label := Label.new()
+	label.text = overlay_text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	label.custom_minimum_size = card_size
+	label.size = card_size
+	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+	label.add_theme_font_size_override("font_size", 10)
+	container.add_child(label)
+
+	return container
+
+
+## Create a face-up pile card node (play pile or discard pile top card).
+## Uses card image if available, otherwise shows denomination + power name.
+func _create_card_pile_node(card: Dictionary, card_size: Vector2) -> Control:
+	var image_filename: String = card.get("image_filename", "")
+
+	if image_filename != "":
+		var texture: Texture2D = _load_card_texture(image_filename)
+		if texture != null:
+			var container := Control.new()
+			container.custom_minimum_size = card_size
+			container.size = card_size
+			container.mouse_filter = Control.MOUSE_FILTER_STOP
+			var tex_rect := TextureRect.new()
+			tex_rect.texture = texture
+			tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+			tex_rect.custom_minimum_size = card_size
+			tex_rect.size = card_size
+			container.add_child(tex_rect)
+			return container
+
+	# Fallback: styled button with denomination + power name
+	var btn := Button.new()
+	btn.text = _format_card_short(card)
+	btn.custom_minimum_size = card_size
+	btn.clip_text = true
+	btn.add_theme_stylebox_override("normal", _create_card_stylebox())
+	btn.add_theme_color_override("font_color", Color(0.0, 0.0, 0.0, 1.0))
+	btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	return btn
+
+
 ## Create a hand card node — uses card image if available, otherwise a styled button.
 ## Card images are looked up at res://assets/cards/{image_filename}.
+## Uses filesystem loading so images don't need to be pre-imported by the editor.
 func _create_hand_card_node(card: Dictionary, card_id: int) -> Control:
 	var image_filename: String = card.get("image_filename", "")
 
-	# Try to load card image
+	# Try to load card image from the filesystem
 	if image_filename != "":
-		var image_path: String = "res://assets/cards/%s" % image_filename
-		if ResourceLoader.exists(image_path):
-			var texture: Texture2D = load(image_path)
-			if texture != null:
-				var tex_btn := TextureButton.new()
-				tex_btn.texture_normal = texture
-				tex_btn.ignore_texture_size = true
-				tex_btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_COVERED
-				tex_btn.custom_minimum_size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
-				tex_btn.size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
-				return tex_btn
+		var texture: Texture2D = _load_card_texture(image_filename)
+		if texture != null:
+			var tex_btn := TextureButton.new()
+			tex_btn.texture_normal = texture
+			tex_btn.ignore_texture_size = true
+			tex_btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_COVERED
+			tex_btn.custom_minimum_size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
+			tex_btn.size = Vector2(HAND_CARD_WIDTH, HAND_CARD_HEIGHT)
+			return tex_btn
 
 	# Fallback: styled text button
 	var card_btn := Button.new()
@@ -1166,6 +1246,36 @@ func _create_hand_card_node(card: Dictionary, card_id: int) -> Control:
 	card_btn.add_theme_color_override("font_pressed_color", Color(0.0, 0.0, 0.0, 1.0))
 	card_btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.3, 0.3, 1.0))
 	return card_btn
+
+
+## Load a card texture from the assets/cards/ directory.
+## Tries the res:// path first (for imported resources), then falls back to
+## loading from the filesystem using Image.load_from_file (for non-imported images).
+## Returns null if the image cannot be found or loaded.
+func _load_card_texture(image_filename: String) -> Texture2D:
+	# Try res:// path first (works if image was imported by the editor)
+	var res_path: String = "res://assets/cards/%s" % image_filename
+	if ResourceLoader.exists(res_path):
+		return load(res_path)
+
+	# Try loading from filesystem directly (works for non-imported images)
+	var abs_path: String = ProjectSettings.globalize_path(res_path)
+	if FileAccess.file_exists(abs_path):
+		var image := Image.new()
+		var err := image.load(abs_path)
+		if err == OK:
+			return ImageTexture.create_from_image(image)
+
+	# Also try without the res:// prefix using the project directory
+	var project_dir: String = ProjectSettings.globalize_path("res://")
+	var full_path: String = project_dir.path_join("assets/cards/%s" % image_filename)
+	if FileAccess.file_exists(full_path):
+		var image := Image.new()
+		var err := image.load(full_path)
+		if err == OK:
+			return ImageTexture.create_from_image(image)
+
+	return null
 
 
 ## Create a StyleBoxFlat for card buttons: opaque background with black border.
@@ -1185,13 +1295,14 @@ func _format_card_short(card: Dictionary) -> String:
 	if card.is_empty():
 		return "—"
 	var denom: int = int(card.get("denomination", 0))
-	var power: String = card.get("power_text", "")
+	var card_name: String = card.get("card_name", "")
 	var denom_str: String = DENOMINATION_NAMES.get(denom, str(denom))
-	if power == "":
+	# Extract power name from card_name (e.g., "1 Tribble - Go" → "Go")
+	var power_name: String = ""
+	if " - " in card_name:
+		power_name = card_name.split(" - ")[1].strip_edges()
+	if power_name == "":
 		return denom_str
-	# Show only the power name, not full rules text.
-	# Power names are typically short (e.g., "Go", "Skip", "Poison").
-	var power_name: String = power.split(":")[0].strip_edges() if ":" in power else power
 	return "%s\n%s" % [denom_str, power_name]
 
 
@@ -1207,9 +1318,9 @@ func _format_card_full(card: Dictionary) -> String:
 	# Show expected image filename if image was not found (helps with naming)
 	var image_filename: String = card.get("image_filename", "")
 	if image_filename != "":
-		var image_path: String = "res://assets/cards/%s" % image_filename
-		# if not ResourceLoader.exists(image_path):
-		result += "\n[Image: %s]" % image_filename
+		var texture: Texture2D = _load_card_texture(image_filename)
+		if texture == null:
+			result += "\n[Image: %s]" % image_filename
 	else:
-		result += "\n[Image: No file name]"
+		result += "\n[No image_filename set]"
 	return result

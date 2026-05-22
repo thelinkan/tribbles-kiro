@@ -802,6 +802,7 @@ class MessageHandler:
                     "card_name": top.card_name,
                     "denomination": top.denomination,
                     "power_text": top.power_text,
+                    "image_filename": top.image_filename,
                 }]
 
             # Top card of discard pile (visible to all)
@@ -813,6 +814,7 @@ class MessageHandler:
                     "card_name": top.card_name,
                     "denomination": top.denomination,
                     "power_text": top.power_text,
+                    "image_filename": top.image_filename,
                 }]
 
             players_info.append({

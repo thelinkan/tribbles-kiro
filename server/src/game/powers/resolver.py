@@ -1028,7 +1028,10 @@ class PowerResolver:
 
         # Check for Antidote on the top card of target's draw deck (Requirement 11.1)
         top_card = target.draw_deck[0]
-        if top_card.power_text.lower().strip() == "antidote":
+        top_card_name = (top_card.card_name or "").lower()
+        top_card_power = (top_card.power_text or "").lower().strip()
+        is_antidote = "antidote" in top_card_name or top_card_power == "antidote"
+        if is_antidote:
             # Antidote triggers: targeted player scores instead
             target.draw_deck.pop(0)
             target.discard_pile.append(top_card)

@@ -716,6 +716,9 @@ class MessageHandler:
     def _build_player_visible_state(self, game_state, player_id: int) -> Optional[dict]:
         """Build the visible state for a specific player.
 
+        Includes the player's hand, all players' public info (names, scores,
+        pile counts, seat positions), and game state info.
+
         Args:
             game_state: The current game state.
             player_id: The player requesting their visible state.
@@ -732,6 +735,7 @@ class MessageHandler:
         if player is None:
             return None
 
+        # Local player's hand (full card details)
         hand = [
             {
                 "card_id": c.card_id,
@@ -743,14 +747,58 @@ class MessageHandler:
             for c in player.hand
         ]
 
+        # Determine which cards in hand are valid to play
+        valid_card_ids = []
+        if game_state.players[game_state.current_player_index].player_id == player_id:
+            for c in player.hand:
+                if self._game_engine._is_valid_play(c, game_state):
+                    valid_card_ids.append(c.card_id)
+
         active_player_id = game_state.players[game_state.current_player_index].player_id
 
+        # All players' public info (in seat order)
+        players_info = []
+        for p in game_state.players:
+            # Top card of play pile (visible to all)
+            play_pile_top = []
+            if p.play_pile:
+                top = p.play_pile[-1]
+                play_pile_top = [{
+                    "card_id": top.card_id,
+                    "card_name": top.card_name,
+                    "denomination": top.denomination,
+                    "power_text": top.power_text,
+                }]
+
+            # Top card of discard pile (visible to all)
+            discard_pile_top = []
+            if p.discard_pile:
+                top = p.discard_pile[-1]
+                discard_pile_top = [{
+                    "card_id": top.card_id,
+                    "card_name": top.card_name,
+                    "denomination": top.denomination,
+                    "power_text": top.power_text,
+                }]
+
+            players_info.append({
+                "player_id": p.player_id,
+                "username": p.username,
+                "is_computer": p.is_computer,
+                "cumulative_score": p.cumulative_score,
+                "draw_deck_count": len(p.draw_deck),
+                "play_pile_top": play_pile_top,
+                "discard_pile_top": discard_pile_top,
+                "is_decked": p.is_decked,
+                "has_gone_out": p.has_gone_out,
+                "seat_position": p.seat_position,
+            })
+
         return {
+            "local_player_id": player_id,
             "hand": hand,
-            "play_pile_count": len(player.play_pile),
-            "draw_deck_count": len(player.draw_deck),
-            "discard_pile_count": len(player.discard_pile),
-            "cumulative_score": player.cumulative_score,
+            "valid_card_ids": valid_card_ids,
+            "players": players_info,
             "current_sequence": game_state.current_sequence,
             "direction": game_state.direction,
             "active_player_id": active_player_id,

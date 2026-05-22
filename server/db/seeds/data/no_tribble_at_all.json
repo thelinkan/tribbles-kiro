@@ -1,44 +1,128 @@
 [
     {
-        "card_name": "Tribble - Battle",
+        "card_name": "Tribble - Clone & Reverse",
         "denomination": 1,
-        "power_text": "Both players reveal top 3 cards; higher total wins all 6 cards under their play pile.",
-        "card_number": "23V",
-        "image_filename": "23V_1_battle.jpg"
+        "power_text": "Clone: Play when denomination matches last played. Reverse: Toggle play direction.",
+        "card_number": "19V",
+        "image_filename": "19V_1_clone_reverse.jpg"
     },
     {
         "card_name": "Tribble - Evolve",
-        "denomination": 10,
-        "power_text": "Move your hand to discard pile, then draw the same number of cards.",
-        "card_number": "24V",
-        "image_filename": "24V_10_evolve.jpg"
-    },
-    {
-        "card_name": "Tribble - Freeze",
-        "denomination": 100,
-        "power_text": "Name a power; that power cannot be played until your next turn.",
-        "card_number": "25V",
-        "image_filename": "25V_100_freeze.jpg"
-    },
-    {
-        "card_name": "Tribble - Mutate",
-        "denomination": 1000,
-        "power_text": "Shuffle your play pile into your draw deck, then move the same number of cards from draw deck to play pile.",
-        "card_number": "26V",
-        "image_filename": "26V_1000_mutate.jpg"
+        "denomination": 1,
+        "power_text": "Count your hand, move hand to discard, draw the same number of cards from your deck.",
+        "card_number": "20V",
+        "image_filename": "20V_1_evolve.jpg"
     },
     {
         "card_name": "Tribble - Process",
-        "denomination": 10000,
-        "power_text": "Draw 3 cards, then place 2 cards from your hand under your draw deck.",
-        "card_number": "27V",
-        "image_filename": "27V_10000_process.jpg"
+        "denomination": 1,
+        "power_text": "Draw 3 cards from your deck, then place 2 cards from your hand under your draw deck.",
+        "card_number": "21V",
+        "image_filename": "21V_1_process.jpg"
     },
     {
-        "card_name": "Tribble - Safety",
-        "denomination": 100000,
-        "power_text": "At round end, if you did not go out, shuffle your hand into your draw deck instead of discarding.",
+        "card_name": "Tribbles - Battle",
+        "denomination": 10,
+        "power_text": "Both you and target reveal top 3 of draw decks. Higher total wins all 6 cards under their play pile; loser discards.",
+        "card_number": "22V",
+        "image_filename": "22V_10_battle.jpg"
+    },
+    {
+        "card_name": "Tribbles - Evolve",
+        "denomination": 10,
+        "power_text": "Count your hand, move hand to discard, draw the same number of cards from your deck.",
+        "card_number": "23V",
+        "image_filename": "23V_10_evolve.jpg"
+    },
+    {
+        "card_name": "Tribbles - Toxin",
+        "denomination": 10,
+        "power_text": "For each Discard card in opponents' play piles, reveal top of their draw deck. Choose one to score; all revealed go to owners' hands.",
+        "card_number": "24V",
+        "image_filename": "24V_10_toxin.jpg"
+    },
+    {
+        "card_name": "Tribbles - Battle",
+        "denomination": 100,
+        "power_text": "Both you and target reveal top 3 of draw decks. Higher total wins all 6 cards under their play pile; loser discards.",
+        "card_number": "25V",
+        "image_filename": "25V_100_battle.jpg"
+    },
+    {
+        "card_name": "Tribbles - Clone & Skip",
+        "denomination": 100,
+        "power_text": "Clone: Play when denomination matches last played. Skip: Skip the next player's turn.",
+        "card_number": "26V",
+        "image_filename": "26V_100_clone_skip.jpg"
+    },
+    {
+        "card_name": "Tribbles - Recycle & Reverse",
+        "denomination": 100,
+        "power_text": "Recycle: Shuffle target's discard into their draw deck. Reverse: Toggle play direction.",
+        "card_number": "27V",
+        "image_filename": "27V_100_recycle_reverse.jpg"
+    },
+    {
+        "card_name": "Tribbles - Freeze",
+        "denomination": 1000,
+        "power_text": "Name a power. That power cannot be activated until the end of your next turn.",
         "card_number": "28V",
-        "image_filename": "28V_100000_safety.jpg"
+        "image_filename": "28V_1000_freeze.jpg"
+    },
+    {
+        "card_name": "Tribbles - Process",
+        "denomination": 1000,
+        "power_text": "Draw 3 cards from your deck, then place 2 cards from your hand under your draw deck.",
+        "card_number": "29V",
+        "image_filename": "29V_1000_process.jpg"
+    },
+    {
+        "card_name": "Tribbles - Safety",
+        "denomination": 1000,
+        "power_text": "At end of round, your hand is shuffled into your draw deck instead of your discard pile.",
+        "card_number": "30V",
+        "image_filename": "30V_1000_safety.jpg"
+    },
+    {
+        "card_name": "Tribbles - Go",
+        "denomination": 10000,
+        "power_text": "Take another turn immediately.",
+        "card_number": "31V",
+        "image_filename": "31V_10000_go.jpg"
+    },
+    {
+        "card_name": "Tribbles - Quadruple",
+        "denomination": 10000,
+        "power_text": "This card is worth 40,000 points instead of 10,000 for the round winner.",
+        "card_number": "32V",
+        "image_filename": "32V_10000_quadruple.jpg"
+    },
+    {
+        "card_name": "Tribbles - Toxin",
+        "denomination": 10000,
+        "power_text": "For each Discard card in opponents' play piles, reveal top of their draw deck. Choose one to score; all revealed go to owners' hands.",
+        "card_number": "33V",
+        "image_filename": "33V_10000_toxin.jpg"
+    },
+    {
+        "card_name": "Tribbles - Mutate",
+        "denomination": 100000,
+        "power_text": "Count your play pile, shuffle it into your deck, then move the same number of cards from deck to play pile.",
+        "card_number": "34V",
+        "image_filename": "34V_100000_mutate.jpg"
+    },
+    {
+        "card_name": "Tribbles - Safety",
+        "denomination": 100000,
+        "power_text": "At end of round, your hand is shuffled into your draw deck instead of your discard pile.",
+        "card_number": "35V",
+        "image_filename": "35V_100000_safety.jpg"
+    },
+    {
+        "card_name": "Tribbles - Tally",
+        "denomination": 100000,
+        "power_text": "When any player scores points from a card, half goes to the scorer and half goes to the Tally card owner.",
+        "card_number": "36V",
+        "image_filename": "36V_100000_tally.jpg"
     }
 ]

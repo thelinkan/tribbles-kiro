@@ -763,8 +763,10 @@ class PowerResolver:
                 if i == player_index:
                     continue
                 # Count Discard cards in this opponent's play pile
+                # Check card_name for "Discard" since power_text is descriptive
                 discard_count = sum(
-                    1 for c in p.play_pile if c.power_text.lower().strip() == "discard"
+                    1 for c in p.play_pile
+                    if "discard" in (c.card_name or "").lower()
                 )
                 # Reveal that many cards from top of their draw deck
                 for _ in range(discard_count):
@@ -774,6 +776,7 @@ class PowerResolver:
 
             if not revealed_cards:
                 # No cards revealed — Toxin has no effect
+                game_state.pending_power = None
                 return [
                     {
                         "type": "power_activated",
@@ -790,7 +793,15 @@ class PowerResolver:
             game_state.pending_power.toxin_revealed = revealed_cards
 
             revealed_info = [
-                {"owner_index": idx, "card_id": card.card_id, "denomination": card.denomination}
+                {
+                    "owner_index": idx,
+                    "owner_username": game_state.players[idx].username,
+                    "card_id": card.card_id,
+                    "card_name": card.card_name,
+                    "denomination": card.denomination,
+                    "power_text": card.power_text,
+                    "image_filename": card.image_filename,
+                }
                 for idx, card in revealed_cards
             ]
             return [
@@ -800,7 +811,7 @@ class PowerResolver:
                     "player_id": player.player_id,
                     "power_name": "toxin",
                     "revealed_cards": revealed_info,
-                    "message": "Choose one revealed card to score its denomination.",
+                    "message": "Toxin: Choose one revealed card to score its denomination.",
                 }
             ]
 

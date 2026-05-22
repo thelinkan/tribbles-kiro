@@ -544,6 +544,15 @@ This plan implements a networked, turn-based card game system with a Python/asyn
     - For matching draws: show card + Play/Keep buttons
     - For non-matching draws: show card + Accept button
 
+- [ ] 29.5 Toxin power visual card reveal
+  - [ ] 29.5.1 Implement positioned Toxin card reveal at player positions
+    - When Toxin is activated, show revealed cards visually at each opponent's position on the table
+    - Each revealed card should appear as a face-up card image/button near the owning player
+    - If AI makes the choice: show revealed cards for 3 seconds before AI picks, then highlight the chosen card for 5 seconds before dismissing
+    - If a human player activates in a multiplayer game: after choice is made, show the result to all human players for 5 seconds
+    - Use timed animations (Godot Tween or Timer) for the delays
+    - Broadcast a "toxin_reveal" event to all players in the game so everyone sees the cards
+
 - [ ] 30. Write client automated tests
   - [ ]* 30.1 Write GUT tests for client scenes
     - Test LoginScreen: scene instantiation, mode toggle, form submission

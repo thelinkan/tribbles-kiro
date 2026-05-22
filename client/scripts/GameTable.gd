@@ -377,15 +377,32 @@ func _show_revealed_card_prompt(power_name: String, message: String, revealed_ca
 	for child in prompt_options.get_children():
 		child.queue_free()
 
+	# Group revealed cards by owner for display
+	var cards_by_owner: Dictionary = {}  # owner_username -> Array of card_info
 	for card_info in revealed_cards:
 		if not card_info is Dictionary:
 			continue
-		var card_id: int = int(card_info.get("card_id", 0))
-		var denom: int = int(card_info.get("denomination", 0))
-		var btn := Button.new()
-		btn.text = "%s (%d pts)" % [DENOMINATION_NAMES.get(denom, str(denom)), denom]
-		btn.pressed.connect(_on_power_card_selected.bind(str(card_id)))
-		prompt_options.add_child(btn)
+		var owner: String = card_info.get("owner_username", "Player")
+		if not cards_by_owner.has(owner):
+			cards_by_owner[owner] = []
+		cards_by_owner[owner].append(card_info)
+
+	# Display cards grouped by owner, each as a clickable button
+	for owner in cards_by_owner:
+		var owner_label := Label.new()
+		owner_label.text = "— %s —" % owner
+		owner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		prompt_options.add_child(owner_label)
+
+		for card_info in cards_by_owner[owner]:
+			var card_id: int = int(card_info.get("card_id", 0))
+			var card_name: String = card_info.get("card_name", "")
+			var denom: int = int(card_info.get("denomination", 0))
+			var denom_str: String = DENOMINATION_NAMES.get(denom, str(denom))
+			var btn := Button.new()
+			btn.text = "%s [%s] — Score %d pts" % [card_name, denom_str, denom]
+			btn.pressed.connect(_on_power_card_selected.bind(str(card_id)))
+			prompt_options.add_child(btn)
 
 	prompt_overlay.visible = true
 

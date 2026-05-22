@@ -163,6 +163,25 @@ class GameEngine:
 
         return []
 
+    def _trigger_end_of_round(self, state: GameState) -> List[dict]:
+        """Trigger end-of-round processing when a player goes out.
+
+        Delegates to the RoundManager to handle scoring, cleanup, and
+        new round setup (or game end).
+
+        Args:
+            state: The current game state (modified in place).
+
+        Returns:
+            List of game events from end-of-round processing.
+        """
+        from game.round_manager import RoundManager
+        from scoring.service import ScoreService
+
+        score_service = ScoreService()
+        round_manager = RoundManager(score_service)
+        return round_manager.process_end_of_round(state)
+
     def _is_clone_card(self, card: CardInstance) -> bool:
         """Check if a card has the Clone power (including compound powers with Clone).
 
@@ -393,6 +412,19 @@ class GameEngine:
                 "new_sequence": state.current_sequence,
             }
         ]
+
+        # Check if player went out (hand is now empty)
+        if len(player.hand) == 0:
+            player.has_gone_out = True
+            events.append({
+                "type": "player_went_out",
+                "player_id": player.player_id,
+                "reason": "empty_hand",
+            })
+            # Trigger end of round
+            round_events = self._trigger_end_of_round(state)
+            events.extend(round_events)
+            return events
 
         # Check if the card has an activatable power (Requirement 9.1)
         activate_power = action.get("activate_power", True)
@@ -641,6 +673,30 @@ class GameEngine:
                 "new_sequence": state.current_sequence,
             }
         ]
+
+        # Check if player went out (hand is now empty)
+        if len(player.hand) == 0:
+            player.has_gone_out = True
+            events.append({
+                "type": "player_went_out",
+                "player_id": player.player_id,
+                "reason": "empty_hand",
+            })
+            # Trigger end of round
+            round_events = self._trigger_end_of_round(state)
+            events.extend(round_events)
+            return events
+
+        # Check if the card has an activatable power
+        activate_power = action.get("activate_power", True)
+        if activate_power:
+            power_prompt_events = self._power_resolver.create_power_prompt(
+                state, player_index, pending_card
+            )
+            if power_prompt_events is not None:
+                # Power prompt created — do NOT advance turn yet.
+                events.extend(power_prompt_events)
+                return events
 
         # Advance turn
         self._advance_turn(state)

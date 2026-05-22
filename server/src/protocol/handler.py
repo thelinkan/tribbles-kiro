@@ -479,24 +479,53 @@ class MessageHandler:
         if self._game_engine is not None:
             from game.engine import GameSession, PlayerSetup
             from models import CardInstance
+            import random as _random
 
             lobby_session = self._lobby_service._sessions.get(session_id)
             if lobby_session:
+                # Load AI user's decks (user named "ai") for computer players
+                ai_deck_ids = []
+                if self._deck_service and self._auth_service:
+                    ai_player_id = await self._get_ai_user_id()
+                    if ai_player_id is not None:
+                        ai_decks = await self._deck_service.list_decks(ai_player_id)
+                        ai_deck_ids = [d.deck_id for d in ai_decks]
+
                 player_setups = []
                 for pid, deck_id in lobby_session.players.items():
-                    # For AI players (negative IDs), create a minimal deck
+                    # For AI players (negative IDs), load a random deck from the "ai" user
                     if pid < 0:
-                        # AI player with a simple deck of 40 cards
-                        deck_cards = [
-                            CardInstance(
-                                card_id=abs(pid) * 1000 + i,
-                                card_name=f"AI_Card_{i}",
-                                denomination=[1, 10, 100, 1000, 10000, 100000][i % 6],
-                                power_text=["Go", "Skip", "Reverse", "Discard", "Poison", "Rescue"][i % 6],
-                                expansion_id=1,
-                            )
-                            for i in range(40)
-                        ]
+                        deck_cards = []
+                        if ai_deck_ids and self._deck_service and self._card_repository:
+                            chosen_deck_id = _random.choice(ai_deck_ids)
+                            deck, _ = await self._deck_service.load_deck(ai_player_id, chosen_deck_id)
+                            if deck:
+                                for card_id_str, quantity in deck.cards.items():
+                                    card = await self._card_repository.get_card(int(card_id_str))
+                                    if card:
+                                        for _ in range(quantity):
+                                            deck_cards.append(CardInstance(
+                                                card_id=card.card_id,
+                                                card_name=card.card_name,
+                                                denomination=card.denomination,
+                                                power_text=card.power_text,
+                                                expansion_id=card.expansion_id,
+                                                image_filename=card.image_filename,
+                                            ))
+
+                        # Fallback if no AI decks available
+                        if not deck_cards:
+                            deck_cards = [
+                                CardInstance(
+                                    card_id=abs(pid) * 1000 + i,
+                                    card_name=f"AI_Card_{i}",
+                                    denomination=[1, 10, 100, 1000, 10000, 100000][i % 6],
+                                    power_text="",
+                                    expansion_id=1,
+                                )
+                                for i in range(40)
+                            ]
+
                         player_setups.append(PlayerSetup(
                             player_id=pid,
                             username=f"Computer_{abs(pid)}",
@@ -1166,3 +1195,31 @@ class MessageHandler:
             The player_id that was disconnected, or None if not authenticated.
         """
         return self._authenticated_connections.pop(websocket, None)
+
+    async def _get_ai_user_id(self) -> Optional[int]:
+        """Look up the player_id of the 'ai' user in the database.
+
+        Returns:
+            The player_id of the 'ai' user, or None if not found.
+        """
+        if self._auth_service is None or not hasattr(self._auth_service, '_pool'):
+            return None
+
+        pool = self._auth_service._pool
+        if pool is None:
+            return None
+
+        try:
+            async with pool.acquire() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        "SELECT player_id FROM players WHERE username = %s",
+                        ("ai",),
+                    )
+                    row = await cur.fetchone()
+                    if row:
+                        return int(row[0])
+        except Exception:
+            logger.warning("Failed to look up 'ai' user")
+
+        return None

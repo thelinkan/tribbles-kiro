@@ -1203,4 +1203,13 @@ func _format_card_full(card: Dictionary) -> String:
 	var denom: int = int(card.get("denomination", 0))
 	var power: String = card.get("power_text", "")
 	var denom_str: String = DENOMINATION_NAMES.get(denom, str(denom))
-	return "%s\n%s: %s\n%s" % [name_str, tr("UI_CARD_FILTER_DENOMINATION"), denom_str, power]
+	var result: String = "%s\n%s: %s\n%s" % [name_str, tr("UI_CARD_FILTER_DENOMINATION"), denom_str, power]
+	# Show expected image filename if image was not found (helps with naming)
+	var image_filename: String = card.get("image_filename", "")
+	if image_filename != "":
+		var image_path: String = "res://assets/cards/%s" % image_filename
+		# if not ResourceLoader.exists(image_path):
+		result += "\n[Image: %s]" % image_filename
+	else:
+		result += "\n[Image: No file name]"
+	return result

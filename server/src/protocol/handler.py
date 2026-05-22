@@ -519,6 +519,7 @@ class MessageHandler:
                                                 denomination=card.denomination,
                                                 power_text=card.power_text,
                                                 expansion_id=card.expansion_id,
+                                                image_filename=card.image_filename,
                                             ))
                         player_setups.append(PlayerSetup(
                             player_id=pid,
